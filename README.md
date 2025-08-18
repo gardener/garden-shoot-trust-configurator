@@ -50,8 +50,7 @@ TODO(theoddora)
 
 Feedback and contributions are always welcome!
 
-Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/garden-shoot-trust-configurator/issues) or reach out on [Slack](https://gardener-cloud.slack.com/) (join the workspace [here](https://gardener.cloud/community/community-bio/)).
-
+Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/garden-shoot-trust-configurator/issues) or reach out on [Slack](https://gardener-cloud.slack.com/) (join the workspace [here](https://gardener.cloud/community)).
 ## Learn more
 
 Please find further resources about out project here:
