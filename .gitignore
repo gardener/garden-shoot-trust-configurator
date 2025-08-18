@@ -1,0 +1,7 @@
+*.test
+*.coverprofile
+*.html
+.vscode
+.idea
+.DS_Store
+*~
