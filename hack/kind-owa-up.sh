@@ -28,7 +28,7 @@ parse_flags() {
 parse_flags "$@"
 
 if [[ -z "${VIRTUAL_KUBECONFIG:-}" || -z "${KIND_KUBECONFIG:-}" ]]; then
-  echo "Usage: $0 --virtual-kubeconfig=<virtual-garden-kubeconfig> --kind-kubeconfig=<kind-gardener-kubeconfig>"
+  echo "Usage: $0 --virtual-kubeconfig <virtual-garden-kubeconfig> --kind-kubeconfig <kind-gardener-kubeconfig>"
   exit 1
 fi
 
@@ -42,20 +42,20 @@ OIDC_WEBHOOK_AUTH_REPO_NAME=github.com/gardener/$OIDC_WEBHOOK_AUTH_NAME
 owa_version=$(go list -m -f '{{.Version}}' $OIDC_WEBHOOK_AUTH_REPO_NAME)
 
 echo "Using OIDC Webhook Authenticator version: $owa_version"
-if [[ ! -d "$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME" || -z "$(ls -A "$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME" 2>/dev/null)" ]]; then
-  mkdir -p "$repo_root/tmp"
-  git clone --quiet -c advice.detachedHead=false https://github.com/gardener/oidc-webhook-authenticator.git "$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME" --branch "$owa_version"
+if [[ ! -d "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME" || -z "$(ls -A "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME" 2>/dev/null)" ]]; then
+  mkdir -p "$repo_root/dev"
+  git clone --quiet -c advice.detachedHead=false https://github.com/gardener/oidc-webhook-authenticator.git "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME" --branch "$owa_version"
 else
-  cd "$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME"
+  cd "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME"
   git fetch
 fi
 
-cd "$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME"
+cd "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME"
 
 git checkout "$owa_version"
 
 # Generate certificates
-cert_dir="$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME/cfssl"
+cert_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/cfssl"
 
 ca_key="$cert_dir/ca.key"
 ca_crt="$cert_dir/ca.crt"
@@ -66,7 +66,7 @@ tls_crt="$cert_dir/tls.crt"
 if [[ ! -s "$ca_crt" || ! -s "$ca_key" ]]; then
     echo "No CA found. Generating new CA key and certificate."
 
-    openssl genrsa -out "$ca_key" 2048
+    openssl genrsa -out "$ca_key" 3072
 
     openssl req -x509 -new -nodes \
         -key "$ca_key" \
@@ -112,7 +112,7 @@ else
 fi
 
 if [[ "$should_generate_cert" == true ]]; then
-  openssl genrsa -out "$tls_key" 2048
+  openssl genrsa -out "$tls_key" 3072
 
   openssl req -new -key "$tls_key" -out "$tls_csr" \
     -subj "/CN=oidc-webhook-authenticator.garden.svc.cluster.local" \
@@ -122,35 +122,35 @@ if [[ "$should_generate_cert" == true ]]; then
     -in "$tls_csr" \
     -CA "$ca_crt" -CAkey "$ca_key" \
     -out "$tls_crt" -days 365 -sha256 \
-    -extfile <(printf "subjectAltName=$SANs")
+    -extfile <(printf "subjectAltName=%s" "$SANs")
 
   rm -f "$tls_csr"
   echo "Development TLS certificate generated successfully."
 fi
 # Finish generating certificates
 
-charts_dir="$repo_root/tmp/$OIDC_WEBHOOK_AUTH_NAME/charts/$OIDC_WEBHOOK_AUTH_NAME"
-values_file="$charts_dir/values.yaml"
+charts_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/charts/$OIDC_WEBHOOK_AUTH_NAME"
+values_file="$charts_dir/values_$(date +%s).yaml"
+cp "$charts_dir/values.yaml" "$values_file"
 
 # Virtual cluster installation
-echo "Patching values.yaml: $values_file"
+echo "Patching Helm values: $values_file"
 yq -i '
   .application.webhookConfig.caBundle = load_str("'"$cert_dir/ca.crt"'") 
   | (.application.webhookConfig.caBundle style="literal")
 ' "$values_file"
-
-yq -i e '.application.enabled = true' "$values_file"
-yq -i e '.application.virtualGarden.enabled = true' "$values_file"
-yq -i e '.runtime.enabled = false' "$values_file"
 
 helm upgrade \
   --install \
   --wait \
   --history-max=4 \
   --values "$values_file" \
+  --set application.enabled="true" \
+  --set application.virtualGarden.enabled="true" \
+  --set runtime.enabled="false" \
   --namespace garden \
-  --kubeconfig $VIRTUAL_KUBECONFIG \
-  shoot-oidc-service \
+  --kubeconfig "$VIRTUAL_KUBECONFIG" \
+  oidc-webhook-authenticator \
   ./charts/oidc-webhook-authenticator 
 
 echo "OIDC Webhook Authenticator installed successfully in the virtual cluster."
@@ -159,7 +159,7 @@ echo "Generating kubeconfig for the OIDC Webhook Authenticator to access the hos
 
 cluster_ca_data=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
 cluster_server=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.server}')
-token=$(kubectl -n garden create token oidc-webhook-authenticator --duration 24h --kubeconfig "$VIRTUAL_KUBECONFIG")
+token=$(kubectl -n garden create token oidc-webhook-authenticator --duration 48h --kubeconfig "$VIRTUAL_KUBECONFIG")
 
 tmpfile=$(mktemp)
 
@@ -192,9 +192,6 @@ yq -i '
 rm -f "$tmpfile"
 
 # Kind Gardener cluster installation
-yq -i e '.application.enabled = false' "$values_file"
-yq -i e '.application.virtualGarden.enabled = false' "$values_file"
-yq -i e '.runtime.enabled = true' "$values_file"
 yq -i '
   .runtime.webhookConfig.tls.crt = load_str("'"$cert_dir/tls.crt"'") 
   | (.runtime.webhookConfig.tls.crt style="literal")
@@ -228,9 +225,12 @@ helm upgrade \
   --wait \
   --history-max=4 \
   --values "$values_file" \
+  --set application.enabled="false" \
+  --set application.virtualGarden.enabled="false" \
+  --set runtime.enabled="true" \
   --namespace garden \
-  --kubeconfig $KIND_KUBECONFIG \
-  shoot-oidc-service \
+  --kubeconfig "$KIND_KUBECONFIG" \
+  oidc-webhook-authenticator \
   ./charts/oidc-webhook-authenticator 
 
 # Patch garden  local to point to OWA
@@ -245,8 +245,7 @@ kubectl patch garden local \
             "authentication": {
               "webhook": {
                 "kubeconfigSecretName": "oidc-webhook-authenticator-kubeconfig",
-                "cacheTTL": "30m",
-                "version": "v1beta1"
+                "cacheTTL": "0s"
               }
             }
           }
@@ -258,6 +257,6 @@ kubectl patch garden local \
 echo "OIDC Webhook Authenticator installed successfully in the hosting kind cluster."
 
 echo "Cleaning up."
-rm -rf $repo_root/tmp
+rm -rf $values_file
 
 echo "Done."
