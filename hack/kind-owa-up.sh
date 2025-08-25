@@ -233,7 +233,7 @@ helm upgrade \
   oidc-webhook-authenticator \
   ./charts/oidc-webhook-authenticator 
 
-# Patch garden  local to point to OWA
+# Patch garden local to point to OWA
 kubectl patch garden local \
   --kubeconfig $KIND_KUBECONFIG \
   --type='merge' \
