@@ -32,10 +32,11 @@ if [[ -z "${VIRTUAL_KUBECONFIG:-}" || -z "${KIND_KUBECONFIG:-}" ]]; then
   exit 1
 fi
 
-repo_root="$(readlink -f $(dirname ${0})/..)"
+repo_root="$(readlink -f "$(dirname "${0}")/..")"
 
 OIDC_WEBHOOK_AUTH_NAME="oidc-webhook-authenticator"
-OIDC_WEBHOOK_AUTH_REPO_NAME=github.com/gardener/$OIDC_WEBHOOK_AUTH_NAME
+OIDC_WEBHOOK_AUTH_REPO=""gardener/$OIDC_WEBHOOK_AUTH_NAME
+OIDC_WEBHOOK_AUTH_REPO_NAME=github.com/$OIDC_WEBHOOK_AUTH_REPO
 
 # TODO(theoddora) Use renovate bot that will be updating the version automatically
 # See: https://docs.renovatebot.com/modules/versioning/
@@ -55,7 +56,9 @@ cd "$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME"
 git checkout "$owa_version"
 
 # Generate certificates
-cert_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/cfssl"
+dev_owa_dir="$repo_root/dev/owa"
+cert_dir="$dev_owa_dir/certs"
+mkdir -p "$cert_dir"
 
 ca_key="$cert_dir/ca.key"
 ca_crt="$cert_dir/ca.crt"
@@ -130,8 +133,24 @@ fi
 # Finish generating certificates
 
 charts_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/charts/$OIDC_WEBHOOK_AUTH_NAME"
-values_file="$charts_dir/values_$(date +%s).yaml"
+values_file="$dev_owa_dir/values.yaml"
 cp "$charts_dir/values.yaml" "$values_file"
+
+release_json=$(curl -s "https://api.github.com/repos/$OIDC_WEBHOOK_AUTH_REPO/releases/tags/$owa_version")
+
+image=$(echo "$release_json" | jq -r '.body' | grep -oE 'europe-docker[^`]+')
+repo_image=$(echo "$image" | cut -d: -f1)
+echo "Image: $image"
+
+default_repo_image=$(yq -r '.runtime.image.repository' "$charts_dir/values.yaml")
+if [[ "$default_repo_image" != "$repo_image" ]]; then
+  yq -i '
+    .runtime.image.repository = "'"$repo_image"'"
+  ' "$values_file"
+  yq -i '
+    .runtime.image.tag = "'"$owa_version"'"
+  ' "$values_file"
+fi
 
 # Virtual cluster installation
 echo "Patching Helm values: $values_file"
@@ -235,7 +254,7 @@ helm upgrade \
 
 # Patch garden local to point to OWA
 kubectl patch garden local \
-  --kubeconfig $KIND_KUBECONFIG \
+  --kubeconfig "$KIND_KUBECONFIG" \
   --type='merge' \
   -p '{
     "spec": {
@@ -255,8 +274,5 @@ kubectl patch garden local \
   }'
 
 echo "OIDC Webhook Authenticator installed successfully in the hosting kind cluster."
-
-echo "Cleaning up."
-rm -rf $values_file
 
 echo "Done."
