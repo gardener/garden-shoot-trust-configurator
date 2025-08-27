@@ -9,5 +9,9 @@
 package tools
 
 import (
+	_ "github.com/gardener/gardener/hack/.ci"
 	_ "github.com/gardener/oidc-webhook-authenticator/cmd/oidc-webhook-authenticator"
+	_ "github.com/ironcore-dev/vgopath"
+	_ "go.uber.org/mock/mockgen"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )
