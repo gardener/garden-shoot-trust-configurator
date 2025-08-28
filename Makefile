@@ -96,7 +96,8 @@ test-clean:
 verify: check format test sast
 
 .PHONY: verify-extended
-verify-extended: check-generate check format test test-cov test-clean sast-report
+# TODO(theoddora): add test command after including unit/integration tests
+verify-extended: check-generate check format sast-report
 
 # TODO(theoddora): re-enable when adding skaffold based local dev setup
 # # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
