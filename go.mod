@@ -1,6 +1,6 @@
 module github.com/gardener/garden-shoot-trust-configurator
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/gardener/gardener v1.126.0
@@ -10,11 +10,9 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
 	go.uber.org/mock v0.6.0
-	k8s.io/api v0.33.4
 	k8s.io/component-base v0.33.4
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.21.0
-	sigs.k8s.io/controller-tools v0.18.0
 )
 
 require (
@@ -39,7 +37,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fluent/fluent-operator/v3 v3.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -53,7 +50,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -164,13 +160,12 @@ require (
 	helm.sh/helm/v3 v3.18.6 // indirect
 	istio.io/api v1.25.4 // indirect
 	istio.io/client-go v1.25.1 // indirect
+	k8s.io/api v0.33.4 // indirect
 	k8s.io/apiextensions-apiserver v0.33.4 // indirect
 	k8s.io/apimachinery v0.33.4 // indirect
 	k8s.io/apiserver v0.33.4 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1 // indirect
 	k8s.io/client-go v0.33.4 // indirect
-	k8s.io/code-generator v0.33.4 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-aggregator v0.33.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20250701173324-9bd5c66d9911 // indirect

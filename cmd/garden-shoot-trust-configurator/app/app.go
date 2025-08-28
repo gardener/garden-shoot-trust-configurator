@@ -17,13 +17,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
+	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -78,18 +76,10 @@ func run(ctx context.Context, log logr.Logger) error {
 			BindAddress: "0",
 		},
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
-		LeaderElection:          false,
-		PprofBindAddress:        "",
-		HealthProbeBindAddress:  net.JoinHostPort("", "8081"),
-		Cache: cache.Options{
-			ByObject: map[client.Object]cache.ByObject{
-				&corev1.Secret{}: {
-					Namespaces: map[string]cache.Config{
-						"gardener-system-shoot-issuer": {},
-					},
-				},
-			},
-		},
+		// TODO(theoddora): Consider enabling the support for leader election + source/target clusters
+		LeaderElection:         false,
+		PprofBindAddress:       "",
+		HealthProbeBindAddress: net.JoinHostPort("", "8081"),
 		Controller: controllerconfig.Controller{
 			RecoverPanic: ptr.To(true),
 		},
@@ -101,12 +91,12 @@ func run(ctx context.Context, log logr.Logger) error {
 	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
 		return err
 	}
+	if err := mgr.AddHealthzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthzWithDeadline(mgr.GetLogger(), clock.RealClock{}, mgr.GetCache(), gardenerhealthz.DefaultCacheSyncDeadline)); err != nil {
+		return err
+	}
 	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
 		return err
 	}
-
-	ctx, cancelMgr := context.WithCancel(ctx)
-	defer cancelMgr()
 
 	return mgr.Start(ctx)
 }

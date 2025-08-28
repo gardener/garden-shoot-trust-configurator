@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -14,7 +13,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting garden-shoot-trust-configurator...")
 	cmd := app.NewCommand()
 
 	if err := cmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {

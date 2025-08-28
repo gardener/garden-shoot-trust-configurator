@@ -11,7 +11,6 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 GOARCH                      ?= $(shell go env GOARCH)
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
-PARALLEL_E2E_TESTS          := 2
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -22,11 +21,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: start
 start:
-# 	./hack/cert-gen.sh
 	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go 
-# 		\
-# 		--tls-cert-file=./example/local/certs/tls.crt \
-# 		--tls-private-key-file=./example/local/certs/tls.key
 
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -35,7 +30,6 @@ start:
 install:
 	@LD_FLAGS=$(LD_FLAGS) EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
 		bash $(GARDENER_HACK_DIR)/install.sh ./...
-
 
 .PHONY: docker-images
 docker-images:
@@ -48,8 +42,6 @@ docker-images:
 .PHONY: tidy
 tidy:
 	@go mod tidy
-	@mkdir -p $(REPO_ROOT)/.ci/hack && cp $(GARDENER_HACK_DIR)/.ci/* $(GARDENER_HACK_DIR)/generate-controller-registration.sh $(REPO_ROOT)/.ci/hack/ && chmod +xw $(REPO_ROOT)/.ci/hack/*
-	@cp $(GARDENER_HACK_DIR)/cherry-pick-pull.sh $(HACK_DIR)/cherry-pick-pull.sh && chmod +xw $(HACK_DIR)/cherry-pick-pull.sh
 
 .PHONY: clean
 clean:
@@ -72,8 +64,8 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ)
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(YQ) $(VGOPATH) $(MOCKGEN) $(HELM)
-#TODO(theoddora): re-enable when adding skaffold based local dev setup + charts
-# 	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./charts/... ./cmd/... ./internal/...
+#TODO(theoddora): add charts directory when charts are introduced to the repository
+	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/...
 	$(MAKE) format
 
 .PHONY: format
@@ -94,7 +86,7 @@ test: $(REPORT_COLLECTOR)
 
 .PHONY: test-cov
 test-cov:
-	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...g
 
 .PHONY: test-clean
 test-clean:
@@ -118,9 +110,6 @@ verify-extended: check-generate check format test test-cov test-clean sast-repor
 
 # server-down: $(SKAFFOLD) $(HELM)
 # 	$(SKAFFOLD) delete
-
-test-e2e-local: $(GINKGO) $(KUBECTL)
-	./hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) ./test/e2e/...
 
 ci-e2e-kind:
 	./hack/ci-e2e-kind.sh
