@@ -31,7 +31,7 @@ import (
 // AppName is the name of the application.
 const AppName = "garden-shoot-trust-configurator"
 
-// NewCommand is the root command for Gardener discovery server.
+// NewCommand is the root command for Garden shoo trust configurator server.
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: AppName,
