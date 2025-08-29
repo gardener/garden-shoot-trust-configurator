@@ -86,7 +86,7 @@ test: $(REPORT_COLLECTOR)
 
 .PHONY: test-cov
 test-cov:
-	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...g
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...
 
 .PHONY: test-clean
 test-clean:
