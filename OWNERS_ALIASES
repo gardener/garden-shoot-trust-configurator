@@ -1,0 +1,11 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  garden-shoot-trust-configurator-reviewers:
+  - dimityrmirchev
+  - vpnachev
+  - theoddora
+  garden-shoot-trust-configurator-approvers:
+  - dimityrmirchev
+  - vpnachev
+  - theoddora

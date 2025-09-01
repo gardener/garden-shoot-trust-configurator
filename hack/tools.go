@@ -9,5 +9,10 @@
 package tools
 
 import (
+	_ "github.com/ahmetb/gen-crd-api-reference-docs"
 	_ "github.com/gardener/oidc-webhook-authenticator/cmd/oidc-webhook-authenticator"
+	_ "github.com/ironcore-dev/vgopath"
+	_ "go.uber.org/mock/mockgen"
+	_ "k8s.io/code-generator"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )

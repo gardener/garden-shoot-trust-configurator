@@ -4,17 +4,6 @@
 This document will walk you through running a Gardener KinD cluster on your local machine, installing oidc-webhook-authenticator ([**OWA**](https://github.com/gardener/oidc-webhook-authenticator)) in it and running the garden-shoot-trust-configurator.
 TODO(theoddora): Later it will contain the steps to install garden-shoot-trust-configurator.
 
-### Prerequisites
-
-- Docker
-- KinD
-- Go (>=1.24)
-- Helm
-- yq
-- kubectl
-- openssl
-
-
 ## 1. Set Up Local Gardener Operator (`gardener/gardener`)
 
 Follow [Gardener's local setup guide](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator).

@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+############# builder
+FROM golang:1.25.0 AS builder
+
+ARG TARGETARCH
+WORKDIR /go/src/github.com/gardener/garden-shoot-trust-configurator
+
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+COPY . .
+
+ARG EFFECTIVE_VERSION
+RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
+
+############# garden-shoot-trust-configurator
+FROM gcr.io/distroless/static-debian12:nonroot AS garden-shoot-trust-configurator
+WORKDIR /
+
+COPY --from=builder /go/bin/garden-shoot-trust-configurator /garden-shoot-trust-configurator
+ENTRYPOINT ["/garden-shoot-trust-configurator"]
