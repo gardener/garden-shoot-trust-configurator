@@ -2,20 +2,23 @@ module github.com/gardener/garden-shoot-trust-configurator
 
 go 1.25.0
 
+tool (
+	github.com/ahmetb/gen-crd-api-reference-docs
+	github.com/gardener/oidc-webhook-authenticator/cmd/oidc-webhook-authenticator
+	github.com/ironcore-dev/vgopath
+	go.uber.org/mock/mockgen
+	k8s.io/code-generator
+	sigs.k8s.io/controller-tools/cmd/controller-gen
+)
+
 require (
-	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gardener/gardener v1.126.0
-	github.com/gardener/oidc-webhook-authenticator v0.37.0
 	github.com/go-logr/logr v1.4.3
-	github.com/ironcore-dev/vgopath v0.1.8
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
-	go.uber.org/mock v0.6.0
-	k8s.io/code-generator v0.33.4
 	k8s.io/component-base v0.33.4
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.21.0
-	sigs.k8s.io/controller-tools v0.18.0
 )
 
 require (
@@ -28,6 +31,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/PaesslerAG/gval v1.2.4 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.2-0.20240726212847-3a740cf7976f // indirect
+	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -47,6 +51,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/gardener/etcd-druid/api v0.31.0 // indirect
 	github.com/gardener/machine-controller-manager v0.59.2 // indirect
+	github.com/gardener/oidc-webhook-authenticator v0.37.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
@@ -72,6 +77,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/ironcore-dev/vgopath v0.1.8 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -138,6 +144,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
@@ -172,6 +179,7 @@ require (
 	k8s.io/apiserver v0.33.4 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1 // indirect
 	k8s.io/client-go v0.33.4 // indirect
+	k8s.io/code-generator v0.33.4 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/klog v1.0.0 // indirect
@@ -180,6 +188,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20250701173324-9bd5c66d9911 // indirect
 	k8s.io/metrics v0.33.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
+	sigs.k8s.io/controller-tools v0.18.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
