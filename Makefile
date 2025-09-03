@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
 NAME                        := garden-shoot-trust-configurator
 IMAGE                       := europe-docker.pkg.dev/gardener-project/public/gardener/$(NAME)
@@ -93,7 +94,8 @@ test-clean:
 	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: verify
-verify: check format test sast
+# TODO(theoddora): add test command after including unit/integration tests
+verify: check format sast
 
 .PHONY: verify-extended
 # TODO(theoddora): add test command after including unit/integration tests
