@@ -17,6 +17,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/utils/clock"
@@ -26,6 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/gardener/garden-shoot-trust-configurator/cmd/garden-shoot-trust-configurator/app/options"
+	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler"
 )
 
 // AppName is the name of the application.
@@ -33,6 +37,9 @@ const AppName = "garden-shoot-trust-configurator"
 
 // NewCommand is the root command for Garden shoot trust configurator server.
 func NewCommand() *cobra.Command {
+	opt := options.NewOptions()
+	conf := &options.Config{}
+
 	cmd := &cobra.Command{
 		Use: AppName,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -48,22 +55,27 @@ func NewCommand() *cobra.Command {
 				log.Info("Flag", "name", flag.Name, "value", flag.Value, "default", flag.DefValue)
 			})
 
-			return run(cmd.Context(), log)
+			if err := opt.ApplyTo(conf); err != nil {
+				return fmt.Errorf("cannot apply options: %w", err)
+			}
+
+			return run(cmd.Context(), log, conf)
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
-			return nil
+			return utilerrors.NewAggregate(opt.Validate())
 		},
 	}
 
 	fs := cmd.Flags()
 	verflag.AddFlags(fs)
+	opt.AddFlags(fs)
 	fs.AddGoFlagSet(flag.CommandLine)
 
 	return cmd
 }
 
-func run(ctx context.Context, log logr.Logger) error {
+func run(ctx context.Context, log logr.Logger, conf *options.Config) error {
 	cfg, err := ctrl.GetConfig()
 	if err != nil {
 		return err
@@ -96,6 +108,12 @@ func run(ctx context.Context, log logr.Logger) error {
 	}
 	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
 		return err
+	}
+	if err := (&shootreconciler.Reconciler{
+		ResyncPeriod: conf.Resync.Duration,
+		Log:          log.WithName("controllers").WithName(shootreconciler.ControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create shoot reconcile controller: %w", err)
 	}
 
 	return mgr.Start(ctx)
