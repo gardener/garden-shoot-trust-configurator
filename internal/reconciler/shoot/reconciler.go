@@ -23,7 +23,7 @@ type Reconciler struct {
 }
 
 // Reconcile handles reconciliation requests for Shoots marked to be trusted in the Garden cluster.
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
 	log.Info("Shoot reconcile finished")
