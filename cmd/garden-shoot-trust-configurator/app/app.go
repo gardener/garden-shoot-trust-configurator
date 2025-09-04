@@ -29,7 +29,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/gardener/garden-shoot-trust-configurator/cmd/garden-shoot-trust-configurator/app/options"
-	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler"
+	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 )
 
 // AppName is the name of the application.

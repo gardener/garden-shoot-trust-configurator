@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Reconciler reconciles shoot trust configurator information.
@@ -22,11 +23,10 @@ type Reconciler struct {
 }
 
 // Reconcile handles reconciliation requests for Shoots marked to be trusted in the Garden cluster.
-func (r *Reconciler) Reconcile(_ context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("shoot", req.NamespacedName)
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := logf.FromContext(ctx)
 
-	log.Info("Reconciling")
-	defer log.Info("Reconcile finished")
+	log.Info("Shoot reconcile finished")
 
 	return ctrl.Result{}, nil
 }

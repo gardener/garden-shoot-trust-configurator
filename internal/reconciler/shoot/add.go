@@ -20,12 +20,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// ControllerName is the name of the shoot trust configurator.
-const ControllerName = "shoot-trust-configurator"
+const (
+	// ControllerName is the name of the shoot trust configurator.
+	ControllerName = "shoot-trust-configurator"
 
-// AnnotationTrustedShoot is the annotation that marks a Shoot to be trusted in the Garden cluster.
-// TODO(theoddora): Add Annotation to gardener/gardener constants and use it afterwards
-const AnnotationTrustedShoot = "authentication.gardener.cloud/trusted"
+	// AnnotationTrustedShoot is the annotation that marks a Shoot to be trusted in the Garden cluster.
+	AnnotationTrustedShoot = "authentication.gardener.cloud/trusted"
+)
 
 // SetupWithManager specifies how the controller is built
 // to watch Shoots with the "authentication.gardener.cloud/trusted" annotation set to "true"
@@ -61,18 +62,14 @@ func isRelevantShoot(obj client.Object) bool {
 	if !ok {
 		return false
 	}
-	if shoot.Annotations == nil {
-		return false
-	}
-	if v, ok := shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer]; ok &&
-		v != v1beta1constants.AnnotationAuthenticationIssuerManaged {
+	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
 		return false
 	}
 	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster.
-	if v, ok := shoot.Annotations[AnnotationTrustedShoot]; ok && v == "true" {
-		return true
+	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
+		return false
 	}
-	return false
+	return true
 }
 
 func isRelevantShootUpdate(oldObj, newObj client.Object) bool {
