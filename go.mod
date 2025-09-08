@@ -12,10 +12,10 @@ tool (
 )
 
 require (
-	github.com/gardener/gardener v1.126.0
+	github.com/gardener/gardener v1.127.0
 	github.com/go-logr/logr v1.4.3
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/cobra v1.10.1
+	github.com/spf13/pflag v1.0.10
 	golang.org/x/time v0.12.0
 	k8s.io/apimachinery v0.33.4
 	k8s.io/client-go v0.33.4
@@ -53,7 +53,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/gardener/etcd-druid/api v0.31.0 // indirect
-	github.com/gardener/machine-controller-manager v0.59.2 // indirect
+	github.com/gardener/machine-controller-manager v0.60.0 // indirect
 	github.com/gardener/oidc-webhook-authenticator v0.37.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/perses/perses-operator v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pquerna/cachecontrol v0.2.0 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.84.1 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.85.0 // indirect
 	github.com/prometheus/client_golang v1.23.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
@@ -178,7 +178,7 @@ require (
 	k8s.io/api v0.33.4 // indirect
 	k8s.io/apiextensions-apiserver v0.33.4 // indirect
 	k8s.io/apiserver v0.33.4 // indirect
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1 // indirect
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.2 // indirect
 	k8s.io/code-generator v0.33.4 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
