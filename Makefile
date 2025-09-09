@@ -22,7 +22,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: start
 start:
-	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go 
+	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go --config=./example/00-config.yaml 
 
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -46,7 +46,7 @@ tidy:
 
 .PHONY: clean
 clean:
-	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./internal/...
+	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./internal/... ./pkg/...
 
 .PHONY: check-generate
 check-generate:
@@ -54,7 +54,7 @@ check-generate:
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ)
-	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/...
+	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/...  ./pkg/...
 #TODO(theoddora): re-enable when adding skaffold based local dev setup + charts
 # 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 # 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
@@ -66,12 +66,13 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ)
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(YQ) $(VGOPATH) $(MOCKGEN) $(HELM)
 #TODO(theoddora): add charts directory when charts are introduced to the repository
-	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/...
+	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/...  ./pkg/...
+	@REPO_ROOT=$(REPO_ROOT) VGOPATH=$(VGOPATH) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(REPO_ROOT)/hack/update-codegen.sh
 	$(MAKE) format
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
-	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./internal
+	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./internal ./pkg
 
 .PHONY: sast
 sast: $(GOSEC)
@@ -83,23 +84,21 @@ sast-report: $(GOSEC)
 
 .PHONY: test
 test: $(REPORT_COLLECTOR)
-	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/...
+	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/...  ./pkg/...	
 
 .PHONY: test-cov
 test-cov:
-	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...  ./pkg/...
 
 .PHONY: test-clean
 test-clean:
 	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: verify
-# TODO(theoddora): add test command after including unit/integration tests
-verify: check format sast
+verify: check format test sast
 
 .PHONY: verify-extended
-# TODO(theoddora): add test command after including unit/integration tests
-verify-extended: check-generate check format sast-report
+verify-extended: check-generate check format test test-cov test-clean sast-report
 
 # TODO(theoddora): re-enable when adding skaffold based local dev setup
 # # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation

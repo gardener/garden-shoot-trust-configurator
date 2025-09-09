@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: garden-shoot-trust-configurator.config.gardener.cloud/v1alpha1
+kind: GardenShootTrustConfiguratorConfiguration
