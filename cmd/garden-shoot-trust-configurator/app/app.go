@@ -41,6 +41,14 @@ func NewCommand() *cobra.Command {
 		Use:   AppName,
 		Short: "Launch the " + AppName,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := opt.Complete(); err != nil {
+				return err
+			}
+
+			if err := opt.Validate(); err != nil {
+				return fmt.Errorf("cannot validate options: %w", err)
+			}
+
 			logLevel, logFormat := opt.LogConfig()
 			log, err := logger.NewZapLogger(logLevel, logFormat)
 			if err != nil {
@@ -57,12 +65,7 @@ func NewCommand() *cobra.Command {
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
-
-			if err := opt.Complete(); err != nil {
-				return err
-			}
-
-			return opt.Validate()
+			return nil
 		},
 	}
 

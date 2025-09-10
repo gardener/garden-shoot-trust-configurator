@@ -10,7 +10,7 @@ import (
 )
 
 // GroupName is the group name used in this package.
-const GroupName = "garden-shoot-trust-configurator.config.gardener.cloud"
+const GroupName = "config.trust-configurator.gardener.cloud"
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}

@@ -37,7 +37,7 @@ In addition you should adapt the `.reuse/dep5` file and assign the correct copyr
 ### Get your reuse badge
 
 TODO(theoddora):
-To get your project reuse compliant you should register it [here](https://api.reuse.software/register) using your SAP email address. After confirming your email, an inital reuse check is done by the reuse API.
+To get your project reuse compliant you should register it [here](https://api.reuse.software/register) using your SAP email address. After confirming your email, an initial reuse check is done by the reuse API.
 
 To add the badge to your project's `README.md` file, use the snipped provided by the reuse API.
 

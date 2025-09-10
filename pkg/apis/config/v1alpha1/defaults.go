@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/gardener/gardener/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -18,10 +19,10 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 // SetDefaults_GardenShootTrustConfiguratorConfiguration sets defaults for the configuration of the garden shoot trust configurator.
 func SetDefaults_GardenShootTrustConfiguratorConfiguration(obj *GardenShootTrustConfiguratorConfiguration) {
 	if obj.LogLevel == "" {
-		obj.LogLevel = LogLevelInfo
+		obj.LogLevel = logger.InfoLevel
 	}
 	if obj.LogFormat == "" {
-		obj.LogFormat = LogFormatJSON
+		obj.LogFormat = logger.FormatJSON
 	}
 }
 

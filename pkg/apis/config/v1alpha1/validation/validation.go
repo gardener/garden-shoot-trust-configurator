@@ -5,22 +5,12 @@
 package validation
 
 import (
-	"testing"
-
 	"github.com/gardener/gardener/pkg/logger"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
-
-// TestV1alpha1 is the entry point for testing the v1alpha1 package
-func TestV1alpha1(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Garden Shoot Trust Configurator APIs Config V1alpha1 Suite")
-}
 
 // ValidateGardenShootTrustConfiguratorConfiguration validates the given `GardenShootTrustConfiguratorConfiguration`.
 func ValidateGardenShootTrustConfiguratorConfiguration(conf *v1alpha1.GardenShootTrustConfiguratorConfiguration) field.ErrorList {

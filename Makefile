@@ -53,8 +53,11 @@ check-generate:
 	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
 
 .PHONY: check
-check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ)
-	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/...  ./pkg/...
+check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS) 
+	go vet ./...
+	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/... ./pkg/...
+	@bash $(GARDENER_HACK_DIR)/check-typos.sh
+	@bash $(GARDENER_HACK_DIR)/check-file-names.sh
 #TODO(theoddora): re-enable when adding skaffold based local dev setup + charts
 # 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 # 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh

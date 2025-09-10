@@ -5,9 +5,13 @@
 package v1alpha1_test
 
 import (
+	"time"
+
 	"github.com/gardener/gardener/pkg/logger"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
@@ -19,15 +23,15 @@ var _ = Describe("Defaults", func() {
 		obj = &GardenShootTrustConfiguratorConfiguration{}
 	})
 
-	Describe("GardenShootTrustConfiguratorConfiguration defaulting", func() {
-		It("should default GardenShootTrustConfiguratorConfiguration correctly", func() {
+	Describe("#SetDefaults_GardenShootTrustConfiguratorConfiguration", func() {
+		It("should default the log level and format", func() {
 			SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
 
 			Expect(obj.LogLevel).To(Equal(logger.InfoLevel))
 			Expect(obj.LogFormat).To(Equal(logger.FormatJSON))
 		})
 
-		It("should not default fields that are set", func() {
+		It("should not override existing values", func() {
 			obj = &GardenShootTrustConfiguratorConfiguration{
 				LogLevel:  "warning",
 				LogFormat: "md",
@@ -39,14 +43,28 @@ var _ = Describe("Defaults", func() {
 		})
 	})
 
-})
+	Describe("#SetDefaults_ShootControllerConfig", func() {
+		var obj *ShootControllerConfig
 
-var _ = Describe("Constants", func() {
-	It("should have the same values as the corresponding constants in the logger package", func() {
-		Expect(LogLevelDebug).To(Equal(logger.DebugLevel))
-		Expect(LogLevelInfo).To(Equal(logger.InfoLevel))
-		Expect(LogLevelError).To(Equal(logger.ErrorLevel))
-		Expect(LogFormatJSON).To(Equal(logger.FormatJSON))
-		Expect(LogFormatText).To(Equal(logger.FormatText))
+		BeforeEach(func() {
+			obj = &ShootControllerConfig{}
+		})
+
+		It("should default the object", func() {
+			SetDefaults_ShootControllerConfig(obj)
+
+			Expect(obj.ResyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: 30 * time.Minute})))
+		})
+
+		It("should not overwrite existing values", func() {
+			obj := &ShootControllerConfig{
+				ResyncPeriod: &metav1.Duration{Duration: time.Second},
+			}
+
+			SetDefaults_ShootControllerConfig(obj)
+
+			Expect(obj.ResyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Second})))
+		})
 	})
+
 })
