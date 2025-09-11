@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: config.trust-configurator.gardener.cloud/v1alpha1
+kind: GardenShootTrustConfiguratorConfiguration
+
+# logLevel: info
+# logFormat: json
+#
+# controllers:
+#   shoot: 
+#     resyncPeriod: 30m

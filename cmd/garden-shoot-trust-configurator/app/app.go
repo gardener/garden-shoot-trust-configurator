@@ -6,7 +6,6 @@ package app
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/utils/clock"
@@ -28,8 +26,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/gardener/garden-shoot-trust-configurator/cmd/garden-shoot-trust-configurator/app/options"
 	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
 // AppName is the name of the application.
@@ -37,13 +35,21 @@ const AppName = "garden-shoot-trust-configurator"
 
 // NewCommand is the root command for Garden shoot trust configurator server.
 func NewCommand() *cobra.Command {
-	opt := options.NewOptions()
-	conf := &options.Config{}
+	opt := newOptions()
 
 	cmd := &cobra.Command{
-		Use: AppName,
+		Use:   AppName,
+		Short: "Launch the " + AppName,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			logLevel, logFormat := "info", "json"
+			if err := opt.Complete(); err != nil {
+				return err
+			}
+
+			if err := opt.Validate(); err != nil {
+				return fmt.Errorf("cannot validate options: %w", err)
+			}
+
+			logLevel, logFormat := opt.LogConfig()
 			log, err := logger.NewZapLogger(logLevel, logFormat)
 			if err != nil {
 				return fmt.Errorf("error instantiating zap logger: %w", err)
@@ -55,27 +61,22 @@ func NewCommand() *cobra.Command {
 				log.Info("Flag", "name", flag.Name, "value", flag.Value, "default", flag.DefValue)
 			})
 
-			if err := opt.ApplyTo(conf); err != nil {
-				return fmt.Errorf("cannot apply options: %w", err)
-			}
-
-			return run(cmd.Context(), log, conf)
+			return run(cmd.Context(), log, opt.config)
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
-			return utilerrors.NewAggregate(opt.Validate())
+			return nil
 		},
 	}
 
-	fs := cmd.Flags()
-	verflag.AddFlags(fs)
-	opt.AddFlags(fs)
-	fs.AddGoFlagSet(flag.CommandLine)
+	flags := cmd.Flags()
+	opt.addFlags(flags)
+	verflag.AddFlags(flags)
 
 	return cmd
 }
 
-func run(ctx context.Context, log logr.Logger, conf *options.Config) error {
+func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootTrustConfiguratorConfiguration) error {
 	cfg, err := ctrl.GetConfig()
 	if err != nil {
 		return err
@@ -109,8 +110,10 @@ func run(ctx context.Context, log logr.Logger, conf *options.Config) error {
 	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
 		return err
 	}
+
+	shootControllerConfig := conf.Controllers.ShootController
 	if err := (&shootreconciler.Reconciler{
-		ResyncPeriod: conf.Resync.Duration,
+		ResyncPeriod: shootControllerConfig.ResyncPeriod.Duration,
 		Log:          log.WithName("controllers").WithName(shootreconciler.ControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create shoot reconcile controller: %w", err)
