@@ -65,11 +65,11 @@ func isRelevantShoot(obj client.Object) bool {
 	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
 		return false
 	}
-	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster.
-	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
-		return false
+	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster or to be removed from the trusted ones.
+	if shoot.Annotations[AnnotationTrustedShoot] == "true" || shoot.Annotations[AnnotationTrustedShoot] == "false" {
+		return true
 	}
-	return true
+	return false
 }
 
 func isRelevantShootUpdate(oldObj, newObj client.Object) bool {
