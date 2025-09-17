@@ -1,6 +1,7 @@
 # garden-shoot-trust-configurator
 
-[![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/garden-shoot-trust-configurator)](https://api.reuse.software/info/github.com/gardener/garden-shoot-trust-configurator)
+
 
 ### Get your reuse badge
 
