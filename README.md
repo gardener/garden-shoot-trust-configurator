@@ -2,21 +2,14 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/garden-shoot-trust-configurator)](https://api.reuse.software/info/github.com/gardener/garden-shoot-trust-configurator)
 
-
-### Get your reuse badge
-
-// TODO(theoddora): Get your reuse badge
-To get your project reuse compliant you should register it [here](https://api.reuse.software/register) using your SAP email address. After confirming your email, an initial reuse check is done by the reuse API.
-
-
 Enable shoot clusters with [`Managed Service Account Issuer`](https://gardener.cloud/docs/gardener/security/shoot_serviceaccounts/#Managed-Service-Account-Issuer) to be registered as trusted clusters in the Garden cluster. This reduces the need for manual service account token management and allows more secure, direct communication between shoots and the Garden cluster. This project is part of the [Gardener](https://gardener.cloud/) ecosystem for managing Kubernetes clusters.
 
 ## Development
 As a prerequisite you need to have a Garden cluster up and running. Follow the [Gardener's local setup guide](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator) which explains how to set up Gardener.
 
-For local development, make sure to install oidc-webhook-authenticator. [Details are outlined here](docs/getting-started-locally.md)
+For local development, make sure to install `oidc-webhook-authenticator`, [more details are outlined here](docs/getting-started-locally.md).
 
-Once the Garden cluster is up and running, export the `kubeconfig` pointing to the cluster as an environment variable.
+Once the Garden cluster is up and running, set the `KUBECONFIG` environment variable to interact with the Garden cluster.
 
 ```bash
 gardener_repo_path=$(pwd)/../gardener # change this if needed
@@ -24,6 +17,7 @@ gardener_repo_path=$(pwd)/../gardener # change this if needed
 export KUBECONFIG=$gardener_repo_path/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 ```
 
+Now start the `garden-shoot-trust-configurator`
 ```bash
 make start
 ```
