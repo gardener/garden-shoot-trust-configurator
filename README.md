@@ -1,6 +1,7 @@
 # garden-shoot-trust-configurator
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/garden-shoot-trust-configurator)](https://api.reuse.software/info/github.com/gardener/garden-shoot-trust-configurator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gardener/garden-shoot-trust-configurator)](https://goreportcard.com/report/github.com/gardener/garden-shoot-trust-configurator)
 
 Enable shoot clusters with [`Managed Service Account Issuer`](https://gardener.cloud/docs/gardener/security/shoot_serviceaccounts/#Managed-Service-Account-Issuer) to be registered as trusted clusters in the Garden cluster. This reduces the need for manual service account token management and allows more secure, direct communication between shoots and the Garden cluster. This project is part of the [Gardener](https://gardener.cloud/) ecosystem for managing Kubernetes clusters.
 
