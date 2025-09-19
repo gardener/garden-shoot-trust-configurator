@@ -13,9 +13,11 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/gardener/gardener/pkg/logger"
+	"github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/utils/clock"
@@ -82,9 +84,12 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 		return err
 	}
 
+	scheme := kubernetes.GardenScheme
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Logger: log.WithName("manager"),
-		Scheme: kubernetes.GardenScheme,
+		Scheme: scheme,
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
 		},
