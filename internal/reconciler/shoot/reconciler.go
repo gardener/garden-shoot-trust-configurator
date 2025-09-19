@@ -12,12 +12,10 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/controllerutils"
-	"github.com/gardener/gardener/pkg/utils"
 	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -25,10 +23,10 @@ import (
 )
 
 const (
-	// LabelKeyManagedBy is a constant for a key of a label on an OIDC resource describing who is managing it.
-	LabelKeyManagedBy = "managed-by"
-	// LabelValueGardenShootTrustConfigurator is a constant for a value of a label on a OIDC describing the value 'garden-shoot-trust-configurator'.
-	LabelValueGardenShootTrustConfigurator = "garden-shoot-trust-configurator"
+	// labelManagedByKey is a constant for a key of a label on an OIDC resource describing who is managing it.
+	labelManagedByKey = "app.kubernetes.io/managed-by"
+	// labelManagedByValue is a constant for a value of a label on a OIDC describing the value 'garden-shoot-trust-configurator'.
+	labelManagedByValue = "garden-shoot-trust-configurator"
 )
 
 // Reconciler reconciles shoot trust configurator information.
@@ -49,29 +47,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	shoot := &gardencorev1beta1.Shoot{}
 	if err := r.Client.Get(ctx, req.NamespacedName, shoot); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.V(1).Info("Object is gone, stop reconciling")
+			log.Info("Object is gone, stop reconciling")
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
 	}
 
 	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
-		log.V(1).Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
+		log.Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
 		return reconcile.Result{}, nil
 	}
 
-	if shoot.Annotations[AnnotationTrustedShoot] != "true" && shoot.Annotations[AnnotationTrustedShoot] != "false" {
-		log.V(1).Info("Shoot does not have expected annotation or their value is not 'true'/'false'", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
-		return reconcile.Result{}, nil
-	}
-
-	if shoot.Annotations[AnnotationTrustedShoot] == "false" {
-		log.V(1).Info("Shoot has trusted annotation set to 'false', clean up OIDC resource")
+	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
+		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
 		return r.deleteOIDC(ctx, log, shoot)
 	}
 
 	if shoot.DeletionTimestamp != nil {
-		log.V(1).Info("Shoot is being deleted, clean up OIDC resource")
+		log.Info("Shoot is being deleted, clean up OIDC resource")
 		return r.deleteOIDC(ctx, log, shoot)
 	}
 
@@ -99,10 +92,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	oidc := emptyOIDC(shoot)
 	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.Client, oidc, func() error {
-		oidc.Annotations = utils.MergeStringMaps(oidc.Annotations, map[string]string{})
-		oidc.Labels = utils.MergeStringMaps(oidc.Labels, map[string]string{
-			LabelKeyManagedBy: LabelValueGardenShootTrustConfigurator,
-		})
+		oidc.Annotations = nil
+		oidc.Labels = map[string]string{
+			labelManagedByKey: labelManagedByValue,
+		}
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
 			IssuerURL: issuerURL,
 			// TODO(theoddora): Consider configuring ClientID based on landscape
@@ -124,7 +117,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 func (r *Reconciler) deleteOIDC(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
 	oidc := emptyOIDC(shoot)
-	err := r.Client.Get(ctx, types.NamespacedName{Name: getOIDCResourceName(shoot), Namespace: v1beta1constants.GardenNamespace}, oidc)
+	err := r.Client.Get(ctx, client.ObjectKeyFromObject(oidc), oidc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("OIDC resource not found, nothing to do", "oidc", client.ObjectKeyFromObject(oidc))
@@ -149,16 +142,15 @@ func (r *Reconciler) deleteOIDC(ctx context.Context, log logr.Logger, shoot *gar
 func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDConnect {
 	return &authenticationv1alpha1.OpenIDConnect{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getOIDCResourceName(shoot),
-			Namespace: v1beta1constants.GardenNamespace,
+			Name: getOIDCResourceName(shoot),
 		},
 	}
 }
 
 func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
-	return fmt.Sprintf("%s-%s", shoot.Namespace, shoot.Name)
+	return fmt.Sprintf("%s--%s--%s", shoot.Namespace, shoot.Name, shoot.UID)
 }
 
 func buildPrefix(shoot *gardencorev1beta1.Shoot) string {
-	return fmt.Sprintf("ns:%s.shoot:%s.id:%s", shoot.Namespace, shoot.Name, string(shoot.UID))
+	return fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))
 }
