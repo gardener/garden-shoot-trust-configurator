@@ -38,6 +38,7 @@ require (
 	github.com/PaesslerAG/gval v1.2.4 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.2-0.20240726212847-3a740cf7976f // indirect
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -55,6 +56,7 @@ require (
 	github.com/fluent/fluent-operator/v3 v3.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
+	github.com/gardener/cert-management v0.17.8 // indirect
 	github.com/gardener/etcd-druid/api v0.31.0 // indirect
 	github.com/gardener/machine-controller-manager v0.60.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
@@ -191,6 +193,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-aggregator v0.33.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20250701173324-9bd5c66d9911 // indirect
+	k8s.io/kubelet v0.33.4 // indirect
 	k8s.io/metrics v0.33.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
 	sigs.k8s.io/controller-tools v0.18.0 // indirect

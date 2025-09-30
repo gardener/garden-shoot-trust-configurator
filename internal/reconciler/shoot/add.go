@@ -5,6 +5,7 @@
 package reconciler
 
 import (
+	"strconv"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -66,7 +67,7 @@ func isRelevantShoot(obj client.Object) bool {
 		return false
 	}
 	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster.
-	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); trusted {
 		return false
 	}
 	return true

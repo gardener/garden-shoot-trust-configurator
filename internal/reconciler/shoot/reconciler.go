@@ -7,6 +7,7 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -47,8 +48,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	shoot := &gardencorev1beta1.Shoot{}
 	if err := r.Client.Get(ctx, req.NamespacedName, shoot); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("Object is gone, stop reconciling")
-			return reconcile.Result{}, nil
+			log.Info("Object is gone, stop reconciling and clean up OIDC resource if it exists", "shoot", req.NamespacedName)
+			return r.deleteOIDC(ctx, log, shoot)
 		}
 		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
 	}
@@ -58,7 +59,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return reconcile.Result{}, nil
 	}
 
-	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
 		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
 		return r.deleteOIDC(ctx, log, shoot)
 	}
@@ -78,17 +79,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if issuerURL == "" {
 		log.Info("Shoot does not have service-account-issuer in its status.advertisedAddresses", "advertisedAddresses", shoot.Status.AdvertisedAddresses)
-		return ctrl.Result{RequeueAfter: r.ResyncPeriod}, nil
+		return ctrl.Result{}, nil
 	}
 
 	// TODO(theoddora): Add proper validation that a single issuer is not registered more than once
 	// This should check if another OIDC resource with the same issuerURL already exists
 
-	userNameClaim := "sub"
-	groupsClaim := "groups"
-	prefix := buildPrefix(shoot)
-	userNamePrefix := prefix
-	groupsPrefix := prefix
+	var (
+		userNameClaim  = "sub"
+		groupsClaim    = "groups"
+		prefix         = buildPrefix(shoot)
+		userNamePrefix = prefix
+		groupsPrefix   = prefix
+	)
 
 	oidc := emptyOIDC(shoot)
 	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.Client, oidc, func() error {
@@ -108,34 +111,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return nil
 	}); err != nil {
 		log.Error(err, "Failed to create or update OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
-		return ctrl.Result{RequeueAfter: r.ResyncPeriod}, err
+		return ctrl.Result{}, err
 	}
 
 	log.Info("Successfully created or updated OIDC resource for shoot", "oidc", client.ObjectKeyFromObject(oidc))
-	return ctrl.Result{RequeueAfter: r.ResyncPeriod}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *Reconciler) deleteOIDC(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
 	oidc := emptyOIDC(shoot)
-	err := r.Client.Get(ctx, client.ObjectKeyFromObject(oidc), oidc)
+	oidcObjectKey := client.ObjectKeyFromObject(oidc)
+	err := r.Client.Get(ctx, oidcObjectKey, oidc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("OIDC resource not found, nothing to do", "oidc", client.ObjectKeyFromObject(oidc))
+			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
 			return reconcile.Result{}, nil
 		}
-		log.Error(err, "Failed to get OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
+		log.Error(err, "Failed to get OIDC resource", "oidc", oidcObjectKey)
 		return reconcile.Result{}, fmt.Errorf("failed to get OIDC: %w", err)
 	}
 
 	if err := r.Client.Delete(ctx, oidc); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("OIDC resource not found, nothing to do", "oidc", client.ObjectKeyFromObject(oidc))
+			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
 			return reconcile.Result{}, nil
 		}
-		log.Error(err, "Failed to delete OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
-		return ctrl.Result{RequeueAfter: r.ResyncPeriod}, fmt.Errorf("failed to delete OIDC: %w", err)
+		log.Error(err, "Failed to delete OIDC resource", "oidc", oidcObjectKey)
+		return ctrl.Result{}, fmt.Errorf("failed to delete OIDC: %w", err)
 	}
-	log.Info("Successfully deleted OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
+	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)
 	return reconcile.Result{}, nil
 }
 
