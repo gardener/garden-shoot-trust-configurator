@@ -48,8 +48,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	shoot := &gardencorev1beta1.Shoot{}
 	if err := r.Client.Get(ctx, req.NamespacedName, shoot); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("Object is gone, stop reconciling and clean up OIDC resource if it exists", "shoot", req.NamespacedName)
-			return r.deleteOIDC(ctx, log, shoot)
+			log.Info("Object is gone, stop reconciling and clean up OIDC resource if it exists")
+			// TODO(theoddora): We don't have the shoot object here, so we cannot pass it to deleteOIDC to construct the OIDC resource name.
+			// We can add a garbage collection mechanism to clean up old OIDC resources that are not referenced by any shoot anymore.
+			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
 	}
