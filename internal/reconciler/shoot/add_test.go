@@ -6,12 +6,9 @@ package reconciler_test
 
 import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/gardener/gardener/pkg/client/kubernetes"
-	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 )
@@ -24,17 +21,11 @@ var _ = Describe("ShootPredicate", func() {
 
 	var (
 		reconciler *shootreconciler.Reconciler
-
-		shoot *gardencorev1beta1.Shoot
+		shoot      *gardencorev1beta1.Shoot
 	)
 
 	BeforeEach(func() {
-		scheme := runtime.NewScheme()
-		Expect(kubernetes.AddGardenSchemeToScheme(scheme)).To(Succeed())
-		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())
-
 		reconciler = &shootreconciler.Reconciler{}
-
 		shoot = &gardencorev1beta1.Shoot{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shootName,
