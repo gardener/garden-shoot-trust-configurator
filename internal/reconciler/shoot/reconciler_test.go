@@ -52,10 +52,8 @@ var _ = Describe("Reconciler", func() {
 
 	BeforeEach(func() {
 		scheme := runtime.NewScheme()
-		err := kubernetes.AddGardenSchemeToScheme(scheme)
-		Expect(err).ToNot(HaveOccurred())
-		err = authenticationv1alpha1.AddToScheme(scheme)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(kubernetes.AddGardenSchemeToScheme(scheme)).To(Succeed())
+		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())
 
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 		reconciler = &shootreconciler.Reconciler{
@@ -93,6 +91,36 @@ var _ = Describe("Reconciler", func() {
 	})
 
 	It("should create OIDC resource", func() {
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(ctrl.Result{}))
+
+		Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
+		Expect(oidc).To(Equal(
+			&authenticationv1alpha1.OpenIDConnect{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: oidc.Name,
+					Labels: map[string]string{
+						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+					},
+					ResourceVersion: "1",
+				},
+				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+					IssuerURL:      "https://shoot/issuer",
+					ClientID:       "garden",
+					UsernameClaim:  ptr.To("sub"),
+					UsernamePrefix: ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					GroupsClaim:    ptr.To("groups"),
+					GroupsPrefix:   ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+				},
+			},
+		))
+	})
+
+	It("should create OIDC resource when shoot annotation is set to 'True'", func() {
+		shoot.Annotations["authentication.gardener.cloud/trusted"] = "True"
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
@@ -175,12 +203,8 @@ var _ = Describe("Reconciler", func() {
 		// Create OIDC resource that should be deleted
 		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
 
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
 		Expect(fakeClient.Delete(ctx, shoot)).To(Succeed())
-		res, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(ctrl.Result{}))
 
