@@ -149,9 +149,11 @@ var _ = Describe("Reconciler", func() {
 		))
 	})
 
-	It("should do nothing because shoot has no managed issuer annotation", func() {
+	It("should delete OIDC resource because shoot has no managed issuer annotation", func() {
 		shoot.Annotations = map[string]string{}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+		// Create OIDC resource that should be deleted
+		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
 		Expect(err).ToNot(HaveOccurred())

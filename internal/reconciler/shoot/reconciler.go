@@ -58,7 +58,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
 		log.Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
-		return reconcile.Result{}, nil
+		return r.deleteOIDC(ctx, log, shoot)
 	}
 
 	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
