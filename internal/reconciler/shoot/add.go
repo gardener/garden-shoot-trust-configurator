@@ -5,6 +5,7 @@
 package reconciler
 
 import (
+	"strconv"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -37,7 +38,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
-		For(&gardencorev1beta1.Shoot{}, builder.WithPredicates(shootPredicate())).
+		For(&gardencorev1beta1.Shoot{}, builder.WithPredicates(r.ShootPredicate())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 50,
 			RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
@@ -48,16 +49,18 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func shootPredicate() predicate.Predicate {
+// ShootPredicate returns a predicate to filter Shoot events
+func (r *Reconciler) ShootPredicate() predicate.Predicate {
 	return predicate.Funcs{
-		CreateFunc:  func(e event.CreateEvent) bool { return isRelevantShoot(e.Object) },
-		UpdateFunc:  func(e event.UpdateEvent) bool { return isRelevantShootUpdate(e.ObjectOld, e.ObjectNew) },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return isRelevantShoot(e.Object) },
+		CreateFunc:  func(e event.CreateEvent) bool { return r.IsRelevantShoot(e.Object) },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return r.IsRelevantShootUpdate(e.ObjectOld, e.ObjectNew) },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return r.IsRelevantShoot(e.Object) },
 		GenericFunc: func(_ event.GenericEvent) bool { return false },
 	}
 }
 
-func isRelevantShoot(obj client.Object) bool {
+// IsRelevantShoot checks whether the given object is a Shoot with the "authentication.gardener.cloud/trusted" annotation set to "true"
+func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 	shoot, ok := obj.(*gardencorev1beta1.Shoot)
 	if !ok {
 		return false
@@ -66,12 +69,13 @@ func isRelevantShoot(obj client.Object) bool {
 		return false
 	}
 	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster.
-	if shoot.Annotations[AnnotationTrustedShoot] != "true" {
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
 		return false
 	}
 	return true
 }
 
-func isRelevantShootUpdate(oldObj, newObj client.Object) bool {
-	return isRelevantShoot(newObj) || isRelevantShoot(oldObj)
+// IsRelevantShootUpdate checks whether the old or new object is a relevant Shoot
+func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
+	return r.IsRelevantShoot(newObj) || r.IsRelevantShoot(oldObj)
 }

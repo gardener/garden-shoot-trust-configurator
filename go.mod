@@ -13,6 +13,7 @@ tool (
 
 require (
 	github.com/gardener/gardener v1.127.1
+	github.com/gardener/oidc-webhook-authenticator v0.37.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.25.0
 	github.com/onsi/gomega v1.38.0
@@ -56,7 +57,6 @@ require (
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/gardener/etcd-druid/api v0.31.0 // indirect
 	github.com/gardener/machine-controller-manager v0.60.0 // indirect
-	github.com/gardener/oidc-webhook-authenticator v0.37.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
@@ -194,6 +194,7 @@ require (
 	k8s.io/metrics v0.33.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
 	sigs.k8s.io/controller-tools v0.18.0 // indirect
+	sigs.k8s.io/gateway-api v1.3.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect

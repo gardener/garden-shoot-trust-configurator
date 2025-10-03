@@ -6,12 +6,28 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"time"
 
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	"github.com/gardener/gardener/pkg/controllerutils"
+	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+const (
+	// labelManagedByKey is a constant for a key of a label on an OIDC resource describing who is managing it.
+	labelManagedByKey = "app.kubernetes.io/managed-by"
+	// labelManagedByValue is a constant for a value of a label on a OIDC describing the value 'garden-shoot-trust-configurator'.
+	labelManagedByValue = "garden-shoot-trust-configurator"
 )
 
 // Reconciler reconciles shoot trust configurator information.
@@ -23,10 +39,124 @@ type Reconciler struct {
 }
 
 // Reconcile handles reconciliation requests for Shoots marked to be trusted in the Garden cluster.
-func (r *Reconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
-	log.Info("Shoot reconcile finished")
+	ctx, cancel := controllerutils.GetMainReconciliationContext(ctx, controllerutils.DefaultReconciliationTimeout)
+	defer cancel()
 
+	shoot := &gardencorev1beta1.Shoot{}
+	if err := r.Client.Get(ctx, req.NamespacedName, shoot); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("Object is gone, stop reconciling and clean up OIDC resource if it exists")
+			// TODO(theoddora): We don't have the shoot object here, so we cannot pass it to deleteOIDC to construct the OIDC resource name.
+			// We can add a garbage collection mechanism to clean up old OIDC resources that are not referenced by any shoot anymore.
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
+	}
+
+	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
+		log.Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
+		return r.deleteOIDC(ctx, log, shoot)
+	}
+
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
+		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
+		return r.deleteOIDC(ctx, log, shoot)
+	}
+
+	if shoot.DeletionTimestamp != nil {
+		log.Info("Shoot is being deleted, clean up OIDC resource")
+		return r.deleteOIDC(ctx, log, shoot)
+	}
+
+	var issuerURL string
+	for _, adr := range shoot.Status.AdvertisedAddresses {
+		if adr.Name == v1beta1constants.AdvertisedAddressServiceAccountIssuer {
+			issuerURL = adr.URL
+			break
+		}
+	}
+
+	if issuerURL == "" {
+		log.Info("Shoot does not have service-account-issuer in its status.advertisedAddresses", "advertisedAddresses", shoot.Status.AdvertisedAddresses)
+		return ctrl.Result{}, nil
+	}
+
+	// TODO(theoddora): Add proper validation that a single issuer is not registered more than once
+	// This should check if another OIDC resource with the same issuerURL already exists
+
+	var (
+		userNameClaim  = "sub"
+		groupsClaim    = "groups"
+		prefix         = buildPrefix(shoot)
+		userNamePrefix = prefix
+		groupsPrefix   = prefix
+	)
+
+	oidc := emptyOIDC(shoot)
+	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.Client, oidc, func() error {
+		oidc.Annotations = nil
+		oidc.Labels = map[string]string{
+			labelManagedByKey: labelManagedByValue,
+		}
+		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
+			IssuerURL: issuerURL,
+			// TODO(theoddora): Consider configuring ClientID based on landscape
+			ClientID:       "garden",
+			UsernameClaim:  &userNameClaim,
+			UsernamePrefix: &userNamePrefix,
+			GroupsClaim:    &groupsClaim,
+			GroupsPrefix:   &groupsPrefix,
+		}
+		return nil
+	}); err != nil {
+		log.Error(err, "Failed to create or update OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
+		return ctrl.Result{}, err
+	}
+
+	log.Info("Successfully created or updated OIDC resource for shoot", "oidc", client.ObjectKeyFromObject(oidc))
 	return ctrl.Result{}, nil
+}
+
+func (r *Reconciler) deleteOIDC(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
+	oidc := emptyOIDC(shoot)
+	oidcObjectKey := client.ObjectKeyFromObject(oidc)
+	err := r.Client.Get(ctx, oidcObjectKey, oidc)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
+			return reconcile.Result{}, nil
+		}
+		log.Error(err, "Failed to get OIDC resource", "oidc", oidcObjectKey)
+		return reconcile.Result{}, fmt.Errorf("failed to get OIDC: %w", err)
+	}
+
+	if err := r.Client.Delete(ctx, oidc); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
+			return reconcile.Result{}, nil
+		}
+		log.Error(err, "Failed to delete OIDC resource", "oidc", oidcObjectKey)
+		return ctrl.Result{}, fmt.Errorf("failed to delete OIDC: %w", err)
+	}
+	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)
+	return reconcile.Result{}, nil
+}
+
+func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDConnect {
+	return &authenticationv1alpha1.OpenIDConnect{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: getOIDCResourceName(shoot),
+		},
+	}
+}
+
+func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
+	return fmt.Sprintf("%s--%s--%s", shoot.Namespace, shoot.Name, shoot.UID)
+}
+
+func buildPrefix(shoot *gardencorev1beta1.Shoot) string {
+	return fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))
 }

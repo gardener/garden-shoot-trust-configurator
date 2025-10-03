@@ -69,7 +69,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(YQ) $(VGOPATH) $(MOCKGEN) $(HELM)
 #TODO(theoddora): add charts directory when charts are introduced to the repository
-	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/...  ./pkg/...
+	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/... ./pkg/...
 	@REPO_ROOT=$(REPO_ROOT) VGOPATH=$(VGOPATH) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(REPO_ROOT)/hack/update-codegen.sh
 	$(MAKE) format
 
@@ -87,11 +87,11 @@ sast-report: $(GOSEC)
 
 .PHONY: test
 test: $(REPORT_COLLECTOR)
-	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/...  ./pkg/...	
+	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/... ./pkg/...	
 
 .PHONY: test-cov
 test-cov:
-	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/...  ./pkg/...
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./internal/... ./pkg/...
 
 .PHONY: test-clean
 test-clean:
