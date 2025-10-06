@@ -163,23 +163,6 @@ var _ = Describe("Reconciler", func() {
 		Expect(updatedShoot.Finalizers).To(ContainElement(finalizer))
 	})
 
-	It("should do nothing when shoot trust-configurator finalizer is missing", func() {
-		shoot.Finalizers = []string{"some-other-finalizer"}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		Expect(fakeClient.Delete(ctx, shoot)).To(Succeed())
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-		var shootList gardencorev1beta1.ShootList
-		Expect(fakeClient.List(ctx, &shootList)).To(Succeed())
-		Expect(shootList.Items).To(HaveLen(1))
-	})
-
 	It("should delete OIDC resource because shoot has no managed issuer annotation", func() {
 		shoot.Annotations = map[string]string{}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
@@ -230,6 +213,9 @@ var _ = Describe("Reconciler", func() {
 	})
 
 	It("should delete OIDC resource because shoot is being deleted", func() {
+		// Adding a finalizer to simulate that the shoot is being deleted and not yet fully deleted to trigger the shoot.DeletionTimestamp check
+		// Additionally, the trust-configurator finalizer was not added yet, however we want to ensure that the OIDC resource is deleted
+		shoot.Finalizers = []string{"some/finalizer"}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 		// Create OIDC resource that should be deleted
 		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
@@ -242,9 +228,7 @@ var _ = Describe("Reconciler", func() {
 		var oidcList authenticationv1alpha1.OpenIDConnectList
 		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
 		Expect(oidcList.Items).To(BeEmpty())
-		var shootList gardencorev1beta1.ShootList
-		Expect(fakeClient.List(ctx, &shootList)).To(Succeed())
-		Expect(shootList.Items).To(BeEmpty())
+		Expect(fakeClient.Get(ctx, shootObjectKey, shoot)).To(Succeed())
 	})
 
 	It("should delete OIDC resource because shoot annotation is invalid", func() {

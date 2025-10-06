@@ -130,11 +130,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // handleDeletion handles the deletion of a shoot and its associated OIDC resource
 func (r *Reconciler) handleDeletion(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(shoot, FinalizerName) {
-		log.Info("Finalizer not present, nothing to clean up")
-		return reconcile.Result{}, nil
-	}
-
 	// Clean up the OIDC resource
 	if err := r.deleteOIDCResource(ctx, log, shoot); err != nil {
 		return ctrl.Result{}, err
