@@ -120,7 +120,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return nil
 	}); err != nil {
-		log.Error(err, "Failed to create or update OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
 		return ctrl.Result{}, err
 	}
 
@@ -152,7 +151,6 @@ func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, sh
 			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
 			return nil
 		}
-		log.Error(err, "Failed to get OIDC resource", "oidc", oidcObjectKey)
 		return fmt.Errorf("failed to get OIDC: %w", err)
 	}
 
@@ -161,7 +159,6 @@ func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, sh
 			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
 			return nil
 		}
-		log.Error(err, "Failed to delete OIDC resource", "oidc", oidcObjectKey)
 		return fmt.Errorf("failed to delete OIDC: %w", err)
 	}
 	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)

@@ -214,7 +214,7 @@ var _ = Describe("Reconciler", func() {
 
 	It("should delete OIDC resource because shoot is being deleted", func() {
 		// Adding a finalizer to simulate that the shoot is being deleted and not yet fully deleted to trigger the shoot.DeletionTimestamp check
-		// Additionally, the trust-configurator finalizer was not added yet, however we want to ensure that the OIDC resource is deleted
+		// Even if the trust-configurator finalizer is missing, we want to ensure that the OIDC resource is deleted
 		shoot.Finalizers = []string{"some/finalizer"}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 		// Create OIDC resource that should be deleted
