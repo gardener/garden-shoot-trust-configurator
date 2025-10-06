@@ -25,6 +25,9 @@ const (
 	// ControllerName is the name of the shoot trust configurator.
 	ControllerName = "shoot-trust-configurator"
 
+	// FinalizerName is the finalizer that is added to shoots to ensure proper cleanup of the OIDC resource.
+	FinalizerName = "authentication.gardener.cloud/shoot-trust-configurator"
+
 	// AnnotationTrustedShoot is the annotation that marks a Shoot to be trusted in the Garden cluster.
 	AnnotationTrustedShoot = "authentication.gardener.cloud/trusted"
 )
