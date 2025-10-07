@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -48,7 +49,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	shoot := &gardencorev1beta1.Shoot{}
 	if err := r.Client.Get(ctx, req.NamespacedName, shoot); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("Object is gone, stop reconciling and clean up OIDC resource if it exists")
+			log.Info("Object is gone, stop reconciling")
 			// TODO(theoddora): We don't have the shoot object here, so we cannot pass it to deleteOIDC to construct the OIDC resource name.
 			// We can add a garbage collection mechanism to clean up old OIDC resources that are not referenced by any shoot anymore.
 			return reconcile.Result{}, nil
@@ -56,19 +57,26 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
 	}
 
+	if shoot.DeletionTimestamp != nil {
+		log.Info("Shoot is being deleted, cleaning up OIDC resource")
+		return r.handleDeletion(ctx, log, shoot)
+	}
+
 	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
 		log.Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
-		return r.deleteOIDC(ctx, log, shoot)
+		return r.handleDeletion(ctx, log, shoot)
 	}
 
 	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
 		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
-		return r.deleteOIDC(ctx, log, shoot)
+		return r.handleDeletion(ctx, log, shoot)
 	}
 
-	if shoot.DeletionTimestamp != nil {
-		log.Info("Shoot is being deleted, clean up OIDC resource")
-		return r.deleteOIDC(ctx, log, shoot)
+	if !controllerutil.ContainsFinalizer(shoot, FinalizerName) {
+		log.Info("Adding finalizer")
+		if err := controllerutils.AddFinalizers(ctx, r.Client, shoot, FinalizerName); err != nil {
+			return ctrl.Result{}, fmt.Errorf("could not add finalizer to shoot: %w", err)
+		}
 	}
 
 	var issuerURL string
@@ -112,7 +120,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return nil
 	}); err != nil {
-		log.Error(err, "Failed to create or update OIDC resource", "oidc", client.ObjectKeyFromObject(oidc))
 		return ctrl.Result{}, err
 	}
 
@@ -120,29 +127,42 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *Reconciler) deleteOIDC(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
+// handleDeletion handles the deletion of a shoot and its associated OIDC resource
+func (r *Reconciler) handleDeletion(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) (ctrl.Result, error) {
+	// Clean up the OIDC resource
+	if err := r.deleteOIDCResource(ctx, log, shoot); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	log.Info("Removing finalizer")
+	if err := controllerutils.RemoveFinalizers(ctx, r.Client, shoot, FinalizerName); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to remove finalizer: %w", err)
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot) error {
 	oidc := emptyOIDC(shoot)
 	oidcObjectKey := client.ObjectKeyFromObject(oidc)
 	err := r.Client.Get(ctx, oidcObjectKey, oidc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
-			return reconcile.Result{}, nil
+			return nil
 		}
-		log.Error(err, "Failed to get OIDC resource", "oidc", oidcObjectKey)
-		return reconcile.Result{}, fmt.Errorf("failed to get OIDC: %w", err)
+		return fmt.Errorf("failed to get OIDC: %w", err)
 	}
 
 	if err := r.Client.Delete(ctx, oidc); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("OIDC resource not found, nothing to do", "oidc", oidcObjectKey)
-			return reconcile.Result{}, nil
+			return nil
 		}
-		log.Error(err, "Failed to delete OIDC resource", "oidc", oidcObjectKey)
-		return ctrl.Result{}, fmt.Errorf("failed to delete OIDC: %w", err)
+		return fmt.Errorf("failed to delete OIDC: %w", err)
 	}
 	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)
-	return reconcile.Result{}, nil
+	return nil
 }
 
 func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDConnect {

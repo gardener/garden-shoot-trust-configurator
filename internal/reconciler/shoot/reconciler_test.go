@@ -34,6 +34,7 @@ var _ = Describe("Reconciler", func() {
 		shootName      = "my-shoot"
 		shootNamespace = "garden-abc"
 		resyncPeriod   = time.Second
+		finalizer      = "authentication.gardener.cloud/shoot-trust-configurator"
 	)
 
 	var (
@@ -60,7 +61,6 @@ var _ = Describe("Reconciler", func() {
 			Client:       fakeClient,
 			ResyncPeriod: resyncPeriod,
 		}
-
 		shoot = &gardencorev1beta1.Shoot{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shootName,
@@ -70,6 +70,7 @@ var _ = Describe("Reconciler", func() {
 					"authentication.gardener.cloud/issuer":  "managed",
 					"authentication.gardener.cloud/trusted": "true",
 				},
+				Finalizers: []string{finalizer},
 			},
 			Status: gardencorev1beta1.ShootStatus{
 				AdvertisedAddresses: []gardencorev1beta1.ShootAdvertisedAddress{
@@ -149,6 +150,19 @@ var _ = Describe("Reconciler", func() {
 		))
 	})
 
+	It("should add trust-configurator shoot finalizer if missing", func() {
+		shoot.Finalizers = nil
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(ctrl.Result{}))
+
+		var updatedShoot gardencorev1beta1.Shoot
+		Expect(fakeClient.Get(ctx, shootObjectKey, &updatedShoot)).To(Succeed())
+		Expect(updatedShoot.Finalizers).To(ContainElement(finalizer))
+	})
+
 	It("should delete OIDC resource because shoot has no managed issuer annotation", func() {
 		shoot.Annotations = map[string]string{}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
@@ -200,6 +214,7 @@ var _ = Describe("Reconciler", func() {
 
 	It("should delete OIDC resource because shoot is being deleted", func() {
 		// Adding a finalizer to simulate that the shoot is being deleted and not yet fully deleted to trigger the shoot.DeletionTimestamp check
+		// Even if the trust-configurator finalizer is missing, we want to ensure that the OIDC resource is deleted
 		shoot.Finalizers = []string{"some/finalizer"}
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 		// Create OIDC resource that should be deleted
