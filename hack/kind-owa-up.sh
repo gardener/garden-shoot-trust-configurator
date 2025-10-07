@@ -138,9 +138,9 @@ cp "$charts_dir/values.yaml" "$values_file"
 
 release_json=$(curl -s "https://api.github.com/repos/$OIDC_WEBHOOK_AUTH_REPO/releases/tags/$owa_version")
 
-image=$(echo "$release_json" | jq -r '.body' | grep -oE 'europe-docker[^`]+')
-repo_image=$(echo "$image" | cut -d: -f1)
+image=$(echo "$release_json" | jq -r '.body' | grep "Container (OCI) Images" -A1 | grep -oE 'europe-docker[^`]+')
 echo "Image: $image"
+repo_image=$(echo "$image" | cut -d: -f1)
 
 default_repo_image=$(yq -r '.runtime.image.repository' "$charts_dir/values.yaml")
 if [[ "$default_repo_image" != "$repo_image" ]]; then
