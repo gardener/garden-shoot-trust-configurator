@@ -136,21 +136,9 @@ charts_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/charts/$OIDC_WEBHOOK_AUTH_NAM
 values_file="$dev_owa_dir/values.yaml"
 cp "$charts_dir/values.yaml" "$values_file"
 
-release_json=$(curl -s "https://api.github.com/repos/$OIDC_WEBHOOK_AUTH_REPO/releases/tags/$owa_version")
-
-image=$(echo "$release_json" | jq -r '.body' | grep -oE 'europe-docker[^`]+')
-repo_image=$(echo "$image" | cut -d: -f1)
-echo "Image: $image"
-
-default_repo_image=$(yq -r '.runtime.image.repository' "$charts_dir/values.yaml")
-if [[ "$default_repo_image" != "$repo_image" ]]; then
-  yq -i '
-    .runtime.image.repository = "'"$repo_image"'"
-  ' "$values_file"
-  yq -i '
-    .runtime.image.tag = "'"$owa_version"'"
-  ' "$values_file"
-fi
+repo_image="europe-docker.pkg.dev/gardener-project/public/gardener/oidc-webhook-authenticator"
+yq -i '.runtime.image.repository = "'"$repo_image"'"' "$values_file"
+yq -i '.runtime.image.tag = "'"$owa_version"'"' "$values_file"
 
 # Virtual cluster installation
 echo "Patching Helm values: $values_file"
