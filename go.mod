@@ -1,6 +1,6 @@
 module github.com/gardener/garden-shoot-trust-configurator
 
-go 1.25.0
+go 1.25.2
 
 tool (
 	github.com/ahmetb/gen-crd-api-reference-docs
