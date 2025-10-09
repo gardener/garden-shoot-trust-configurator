@@ -9,7 +9,7 @@ updates:
     commit-message:
       prefix: "chore(deps):"
     labels:
-      - "/kind enhancement"
+      - "kind/enhancement"
     allow:
     - dependency-name: "github.com/gardener/gardener"
     - dependency-name: "github.com/gardener/oidc-webhook-authenticator"
@@ -21,7 +21,7 @@ updates:
     commit-message:
       prefix: "chore(deps):"
     labels:
-      - "/kind enhancement"
+      - "kind/enhancement"
   # Create PRs for GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: /
@@ -30,4 +30,4 @@ updates:
     commit-message:
       prefix: "chore(deps):"
     labels:
-      - "/kind enhancement"
+      - "kind/enhancement"
