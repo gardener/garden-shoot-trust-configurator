@@ -8,5 +8,6 @@ kind: GardenShootTrustConfiguratorConfiguration
 # logFormat: json
 #
 # controllers:
-#   shoot: 
-#     resyncPeriod: 30m
+#   garbageCollector: 
+#     syncPeriod: 1h
+#     minimumObjectLifetime: 10m

@@ -7,7 +7,6 @@ package reconciler_test
 import (
 	"context"
 	"fmt"
-	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -33,7 +32,6 @@ var _ = Describe("Reconciler", func() {
 	const (
 		shootName      = "my-shoot"
 		shootNamespace = "garden-abc"
-		resyncPeriod   = time.Second
 		finalizer      = "authentication.gardener.cloud/shoot-trust-configurator"
 	)
 
@@ -58,8 +56,7 @@ var _ = Describe("Reconciler", func() {
 
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 		reconciler = &shootreconciler.Reconciler{
-			Client:       fakeClient,
-			ResyncPeriod: resyncPeriod,
+			Client: fakeClient,
 		}
 		shoot = &gardencorev1beta1.Shoot{
 			ObjectMeta: metav1.ObjectMeta{

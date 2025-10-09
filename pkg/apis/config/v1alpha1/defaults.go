@@ -26,9 +26,12 @@ func SetDefaults_GardenShootTrustConfiguratorConfiguration(obj *GardenShootTrust
 	}
 }
 
-// SetDefaults_ShootControllerConfig sets defaults for the ShootControllerConfig object.
-func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
-	if obj.ResyncPeriod == nil {
-		obj.ResyncPeriod = &metav1.Duration{Duration: time.Minute * 30}
+// SetDefaults_GarbageCollectorControllerConfig sets defaults for the GarbageCollectorControllerConfig object.
+func SetDefaults_GarbageCollectorControllerConfig(obj *GarbageCollectorControllerConfig) {
+	if obj.SyncPeriod == nil {
+		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
+	}
+	if obj.MinimumObjectLifetime == nil {
+		obj.MinimumObjectLifetime = &metav1.Duration{Duration: 10 * time.Minute}
 	}
 }
