@@ -43,28 +43,30 @@ var _ = Describe("Defaults", func() {
 		})
 	})
 
-	Describe("#SetDefaults_ShootControllerConfig", func() {
-		var obj *ShootControllerConfig
+	Describe("#SetDefaults_GarbageCollectorControllerConfig", func() {
+		var obj *GarbageCollectorControllerConfig
 
 		BeforeEach(func() {
-			obj = &ShootControllerConfig{}
+			obj = &GarbageCollectorControllerConfig{}
 		})
 
 		It("should default the object", func() {
-			SetDefaults_ShootControllerConfig(obj)
+			SetDefaults_GarbageCollectorControllerConfig(obj)
 
-			Expect(obj.ResyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: 30 * time.Minute})))
+			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
+			Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 10 * time.Minute})))
 		})
 
 		It("should not overwrite existing values", func() {
-			obj := &ShootControllerConfig{
-				ResyncPeriod: &metav1.Duration{Duration: time.Second},
+			obj := &GarbageCollectorControllerConfig{
+				SyncPeriod:            &metav1.Duration{Duration: time.Minute},
+				MinimumObjectLifetime: &metav1.Duration{Duration: 5 * time.Minute},
 			}
 
-			SetDefaults_ShootControllerConfig(obj)
+			SetDefaults_GarbageCollectorControllerConfig(obj)
 
-			Expect(obj.ResyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Second})))
+			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
+			Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 5 * time.Minute})))
 		})
 	})
-
 })
