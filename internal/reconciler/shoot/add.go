@@ -62,7 +62,9 @@ func (r *Reconciler) ShootPredicate() predicate.Predicate {
 	}
 }
 
-// IsRelevantShoot checks whether the given object is a Shoot with the "authentication.gardener.cloud/trusted" annotation set to "true"
+// IsRelevantShoot is true for a shoot with:
+// "authentication.gardener.cloud/trusted" annotation set to "true"
+// "authentication.gardener.cloud/issuer" annotation set to "managed"
 func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 	shoot, ok := obj.(*gardencorev1beta1.Shoot)
 	if !ok {
@@ -78,7 +80,64 @@ func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 	return true
 }
 
-// IsRelevantShootUpdate checks whether the old or new object is a relevant Shoot
+// IsRelevantShootUpdate triggers reconciliation for the following cases:
+// A Shoot becoming relevant or irrelevant using IsRelevantShoot.
+// The service-account-issuer changed.
+// Shoot is marked for deletion.
 func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
-	return r.IsRelevantShoot(newObj) || r.IsRelevantShoot(oldObj)
+	oldShoot, ok := oldObj.(*gardencorev1beta1.Shoot)
+	if !ok {
+		return false
+	}
+	newShoot, ok := newObj.(*gardencorev1beta1.Shoot)
+	if !ok {
+		return false
+	}
+
+	oldIsRelevant := r.IsRelevantShoot(oldShoot)
+	newIsRelevant := r.IsRelevantShoot(newShoot)
+
+	if oldIsRelevant != newIsRelevant {
+		return true
+	}
+	if (oldIsRelevant || newIsRelevant) && r.HasServiceAccountIssuerChanged(oldShoot, newShoot) {
+		return true
+	}
+	if oldObj.GetDeletionTimestamp() == nil && newObj.GetDeletionTimestamp() != nil {
+		if oldIsRelevant || newIsRelevant {
+			return true
+		}
+	}
+
+	return false
+}
+
+// HasServiceAccountIssuerChanged checks if the shoot's service-account-issuer has been changed
+func (r *Reconciler) HasServiceAccountIssuerChanged(oldShoot, newShoot *gardencorev1beta1.Shoot) bool {
+	var (
+		oldStatuses = oldShoot.Status.AdvertisedAddresses
+		newStatuses = newShoot.Status.AdvertisedAddresses
+	)
+
+	oldIdx := getAdvertisedAddressServiceAccountIssuer(oldStatuses)
+	newIdx := getAdvertisedAddressServiceAccountIssuer(newStatuses)
+
+	if oldIdx == -1 && newIdx == -1 {
+		return false
+	}
+
+	if oldIdx == -1 && newIdx != -1 || oldIdx != -1 && newIdx == -1 {
+		return true
+	}
+
+	return oldStatuses[oldIdx] != newStatuses[newIdx]
+}
+
+func getAdvertisedAddressServiceAccountIssuer(addrs []gardencorev1beta1.ShootAdvertisedAddress) int {
+	for ind, a := range addrs {
+		if a.Name == v1beta1constants.AdvertisedAddressServiceAccountIssuer {
+			return ind
+		}
+	}
+	return -1
 }

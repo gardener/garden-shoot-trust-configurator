@@ -120,7 +120,9 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 	}
 
 	// Setup all Controllers
-	if err := (&shootreconciler.Reconciler{}).SetupWithManager(mgr); err != nil {
+	if err := (&shootreconciler.Reconciler{
+		Config: conf.Controllers.ShootReconciler,
+	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create shoot reconcile controller: %w", err)
 	}
 

@@ -21,6 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
 const (
@@ -33,6 +35,7 @@ const (
 // Reconciler reconciles shoot trust configurator information.
 type Reconciler struct {
 	Client client.Client
+	Config configv1alpha1.ShootReconcilerControllerConfig
 }
 
 // Reconcile handles reconciliation requests for Shoots marked to be trusted in the Garden cluster.
@@ -84,8 +87,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if issuerURL == "" {
-		log.Info("Shoot does not have service-account-issuer in its status.advertisedAddresses", "advertisedAddresses", shoot.Status.AdvertisedAddresses)
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, fmt.Errorf("shoot does not have service-account-issuer in its status.advertisedAddresses: %s", shoot.Status.AdvertisedAddresses)
 	}
 
 	// TODO(theoddora): Add proper validation that a single issuer is not registered more than once
@@ -120,7 +122,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	log.Info("Successfully created or updated OIDC resource for shoot", "oidc", client.ObjectKeyFromObject(oidc))
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: r.Config.SyncPeriod.Duration}, nil
 }
 
 // handleDeletion handles the deletion of a shoot and its associated OIDC resource
