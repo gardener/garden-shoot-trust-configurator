@@ -35,3 +35,10 @@ func SetDefaults_GarbageCollectorControllerConfig(obj *GarbageCollectorControlle
 		obj.MinimumObjectLifetime = &metav1.Duration{Duration: 10 * time.Minute}
 	}
 }
+
+// SetDefaults_ShootControllerConfig sets defaults for the ShootControllerConfig object.
+func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
+	if obj.SyncPeriod == nil {
+		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
+	}
+}

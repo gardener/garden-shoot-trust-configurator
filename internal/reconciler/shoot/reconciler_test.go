@@ -7,6 +7,7 @@ package reconciler_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -25,7 +26,8 @@ import (
 	logzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
 var _ = Describe("Reconciler", func() {
@@ -38,7 +40,7 @@ var _ = Describe("Reconciler", func() {
 	var (
 		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
 
-		reconciler *shootreconciler.Reconciler
+		reconciler *shootcontroller.Reconciler
 		fakeClient client.Client
 
 		shoot          *gardencorev1beta1.Shoot
@@ -55,8 +57,11 @@ var _ = Describe("Reconciler", func() {
 		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())
 
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
-		reconciler = &shootreconciler.Reconciler{
+		reconciler = &shootcontroller.Reconciler{
 			Client: fakeClient,
+			Config: configv1alpha1.ShootControllerConfig{
+				SyncPeriod: &metav1.Duration{Duration: time.Hour},
+			},
 		}
 		shoot = &gardencorev1beta1.Shoot{
 			ObjectMeta: metav1.ObjectMeta{
@@ -93,7 +98,7 @@ var _ = Describe("Reconciler", func() {
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
+		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
 
 		Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
 		Expect(oidc).To(Equal(
@@ -123,7 +128,7 @@ var _ = Describe("Reconciler", func() {
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
+		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
 
 		Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
 		Expect(oidc).To(Equal(
@@ -153,7 +158,7 @@ var _ = Describe("Reconciler", func() {
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
+		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
 
 		var updatedShoot gardencorev1beta1.Shoot
 		Expect(fakeClient.Get(ctx, shootObjectKey, &updatedShoot)).To(Succeed())
@@ -246,12 +251,12 @@ var _ = Describe("Reconciler", func() {
 		Expect(oidcList.Items).To(BeEmpty())
 	})
 
-	It("should do nothing because shoot status.advertisedAddresses is empty", func() {
+	It("should result in error because shoot status.advertisedAddresses is empty", func() {
 		shoot.Status.AdvertisedAddresses = nil
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(Equal(ctrl.Result{}))
 
 		var oidcList authenticationv1alpha1.OpenIDConnectList
@@ -259,7 +264,7 @@ var _ = Describe("Reconciler", func() {
 		Expect(oidcList.Items).To(BeEmpty())
 	})
 
-	It("should do nothing because shoot status.advertisedAddresses has no service account issuer", func() {
+	It("should result in error because shoot status.advertisedAddresses has no service account issuer", func() {
 		shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
 			{
 				Name: "foo",
@@ -269,7 +274,7 @@ var _ = Describe("Reconciler", func() {
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
 		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(Equal(ctrl.Result{}))
 
 		var oidcList authenticationv1alpha1.OpenIDConnectList

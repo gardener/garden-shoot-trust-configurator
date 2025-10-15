@@ -25,5 +25,6 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_GardenShootTrustConfiguratorConfiguration(in *GardenShootTrustConfiguratorConfiguration) {
 	SetDefaults_GardenShootTrustConfiguratorConfiguration(in)
+	SetDefaults_ShootControllerConfig(&in.Controllers.Shoot)
 	SetDefaults_GarbageCollectorControllerConfig(&in.Controllers.GarbageCollector)
 }

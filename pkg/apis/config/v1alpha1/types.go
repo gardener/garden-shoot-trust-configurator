@@ -24,6 +24,8 @@ type GardenShootTrustConfiguratorConfiguration struct {
 
 // ControllerConfiguration defines the configuration of the controllers.
 type ControllerConfiguration struct {
+	// Shoot is the configuration for the shoot controller.
+	Shoot ShootControllerConfig `json:"shoot"`
 	// GarbageCollector is the configuration for the garbage-collector controller.
 	GarbageCollector GarbageCollectorControllerConfig `json:"garbageCollector"`
 }
@@ -36,4 +38,11 @@ type GarbageCollectorControllerConfig struct {
 	// MinimumObjectLifetime is the minimum age an object must have before it is considered for garbage collection.
 	// +optional
 	MinimumObjectLifetime *metav1.Duration `json:"minimumObjectLifetime,omitempty"`
+}
+
+// ShootControllerConfig is the configuration for the shoot controller.
+type ShootControllerConfig struct {
+	// SyncPeriod is the duration how often the controller performs its reconciliation.
+	// +optional
+	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
 }
