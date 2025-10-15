@@ -103,12 +103,9 @@ func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
 	if (oldIsRelevant || newIsRelevant) && r.HasServiceAccountIssuerChanged(oldShoot, newShoot) {
 		return true
 	}
-	if oldObj.GetDeletionTimestamp() == nil && newObj.GetDeletionTimestamp() != nil {
-		if oldIsRelevant || newIsRelevant {
-			return true
-		}
+	if (oldIsRelevant || newIsRelevant) && oldShoot.GetDeletionTimestamp() == nil && newShoot.GetDeletionTimestamp() != nil {
+		return true
 	}
-
 	return false
 }
 
