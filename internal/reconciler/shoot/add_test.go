@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 )
 
 var _ = Describe("ShootPredicate", func() {
@@ -23,12 +23,12 @@ var _ = Describe("ShootPredicate", func() {
 	)
 
 	var (
-		reconciler *shootreconciler.Reconciler
+		reconciler *shootcontroller.Reconciler
 		shoot      *gardencorev1beta1.Shoot
 	)
 
 	BeforeEach(func() {
-		reconciler = &shootreconciler.Reconciler{}
+		reconciler = &shootcontroller.Reconciler{}
 		shoot = &gardencorev1beta1.Shoot{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shootName,

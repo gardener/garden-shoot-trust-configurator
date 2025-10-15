@@ -35,7 +35,7 @@ const (
 // Reconciler reconciles shoot trust configurator information.
 type Reconciler struct {
 	Client client.Client
-	Config configv1alpha1.ShootReconcilerControllerConfig
+	Config configv1alpha1.ShootControllerConfig
 }
 
 // Reconcile handles reconciliation requests for Shoots marked to be trusted in the Garden cluster.

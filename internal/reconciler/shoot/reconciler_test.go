@@ -26,7 +26,7 @@ import (
 	logzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
@@ -40,7 +40,7 @@ var _ = Describe("Reconciler", func() {
 	var (
 		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
 
-		reconciler *shootreconciler.Reconciler
+		reconciler *shootcontroller.Reconciler
 		fakeClient client.Client
 
 		shoot          *gardencorev1beta1.Shoot
@@ -57,9 +57,9 @@ var _ = Describe("Reconciler", func() {
 		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())
 
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
-		reconciler = &shootreconciler.Reconciler{
+		reconciler = &shootcontroller.Reconciler{
 			Client: fakeClient,
-			Config: configv1alpha1.ShootReconcilerControllerConfig{
+			Config: configv1alpha1.ShootControllerConfig{
 				SyncPeriod: &metav1.Duration{Duration: time.Hour},
 			},
 		}

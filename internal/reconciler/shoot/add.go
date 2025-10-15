@@ -5,6 +5,7 @@
 package reconciler
 
 import (
+	"slices"
 	"strconv"
 	"time"
 
@@ -63,8 +64,8 @@ func (r *Reconciler) ShootPredicate() predicate.Predicate {
 }
 
 // IsRelevantShoot is true for a shoot with:
-// "authentication.gardener.cloud/trusted" annotation set to "true"
-// "authentication.gardener.cloud/issuer" annotation set to "managed"
+// - "authentication.gardener.cloud/trusted" annotation set to "true"
+// - "authentication.gardener.cloud/issuer" annotation set to "managed"
 func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 	shoot, ok := obj.(*gardencorev1beta1.Shoot)
 	if !ok {
@@ -81,9 +82,9 @@ func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 }
 
 // IsRelevantShootUpdate triggers reconciliation for the following cases:
-// A Shoot becoming relevant or irrelevant using IsRelevantShoot.
-// The service-account-issuer changed.
-// Shoot is marked for deletion.
+// - a Shoot becoming relevant or irrelevant using [IsRelevantShoot]
+// - the service-account-issuer changed
+// - a shoot being marked for deletion
 func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
 	oldShoot, ok := oldObj.(*gardencorev1beta1.Shoot)
 	if !ok {
@@ -131,10 +132,7 @@ func (r *Reconciler) HasServiceAccountIssuerChanged(oldShoot, newShoot *gardenco
 }
 
 func getAdvertisedAddressServiceAccountIssuer(addrs []gardencorev1beta1.ShootAdvertisedAddress) int {
-	for ind, a := range addrs {
-		if a.Name == v1beta1constants.AdvertisedAddressServiceAccountIssuer {
-			return ind
-		}
-	}
-	return -1
+	return slices.IndexFunc(addrs, func(a gardencorev1beta1.ShootAdvertisedAddress) bool {
+		return a.Name == v1beta1constants.AdvertisedAddressServiceAccountIssuer
+	})
 }

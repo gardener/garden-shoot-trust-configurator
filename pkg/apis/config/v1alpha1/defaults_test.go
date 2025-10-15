@@ -70,25 +70,25 @@ var _ = Describe("Defaults", func() {
 		})
 	})
 
-	Describe("#SetDefaults_ShootReconcilerControllerConfig", func() {
-		var obj *ShootReconcilerControllerConfig
+	Describe("#SetDefaults_ShootControllerConfig", func() {
+		var obj *ShootControllerConfig
 
 		BeforeEach(func() {
-			obj = &ShootReconcilerControllerConfig{}
+			obj = &ShootControllerConfig{}
 		})
 
 		It("should default the object", func() {
-			SetDefaults_ShootReconcilerControllerConfig(obj)
+			SetDefaults_ShootControllerConfig(obj)
 
 			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
 		})
 
 		It("should not overwrite existing values", func() {
-			obj := &ShootReconcilerControllerConfig{
+			obj := &ShootControllerConfig{
 				SyncPeriod: &metav1.Duration{Duration: time.Minute},
 			}
 
-			SetDefaults_ShootReconcilerControllerConfig(obj)
+			SetDefaults_ShootControllerConfig(obj)
 
 			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
 		})

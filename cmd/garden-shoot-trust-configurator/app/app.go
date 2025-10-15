@@ -30,7 +30,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/garbagecollector"
-	shootreconciler "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
@@ -120,8 +120,8 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 	}
 
 	// Setup all Controllers
-	if err := (&shootreconciler.Reconciler{
-		Config: conf.Controllers.ShootReconciler,
+	if err := (&shootcontroller.Reconciler{
+		Config: conf.Controllers.Shoot,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create shoot reconcile controller: %w", err)
 	}

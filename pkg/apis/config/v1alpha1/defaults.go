@@ -36,8 +36,8 @@ func SetDefaults_GarbageCollectorControllerConfig(obj *GarbageCollectorControlle
 	}
 }
 
-// SetDefaults_ShootReconcilerControllerConfig sets defaults for the ShootReconcilerControllerConfig object.
-func SetDefaults_ShootReconcilerControllerConfig(obj *ShootReconcilerControllerConfig) {
+// SetDefaults_ShootControllerConfig sets defaults for the ShootControllerConfig object.
+func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
 	if obj.SyncPeriod == nil {
 		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestShootReconciler(t *testing.T) {
+func TestShootController(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Shoot Reconciler Test Suite")
+	RunSpecs(t, "Shoot Controller Test Suite")
 }
