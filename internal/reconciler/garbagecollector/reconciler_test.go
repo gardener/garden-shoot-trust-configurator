@@ -70,6 +70,7 @@ var _ = Describe("Controller", func() {
 			trustedShoot1    *gardencorev1beta1.Shoot
 			trustedShoot2    *gardencorev1beta1.Shoot
 			nonTrustedShoot3 *gardencorev1beta1.Shoot
+			nonTrustedShoot4 *gardencorev1beta1.Shoot
 		)
 
 		BeforeEach(func() {
@@ -87,6 +88,7 @@ var _ = Describe("Controller", func() {
 			labeledOIDC6 = createLabeledOIDC("garden--shoot-6--UID")
 			labeledOIDC7 = createLabeledOIDC("garden--shoot-7--UID")
 			labeledOIDC8 = createLabeledOIDC("garden--shoot-8--UID")
+			// OIDC resource that is too new to be garbage collected
 			labeledOIDC9 = createLabeledOIDC("garden--shoot-9--UID")
 			labeledOIDC9.CreationTimestamp = creationTimestamp
 
@@ -117,6 +119,17 @@ var _ = Describe("Controller", func() {
 			nonTrustedShoot3 = &gardencorev1beta1.Shoot{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "shoot-3",
+					Namespace: "garden",
+					UID:       "UID",
+					Annotations: map[string]string{
+						"authentication.gardener.cloud/issuer": "managed",
+					},
+				},
+			}
+
+			nonTrustedShoot4 = &gardencorev1beta1.Shoot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "shoot-4",
 					Namespace: "garden",
 					UID:       "UID",
 					Annotations: map[string]string{
@@ -179,6 +192,7 @@ var _ = Describe("Controller", func() {
 			Expect(fakeClient.Create(ctx, trustedShoot1)).To(Succeed())
 			Expect(fakeClient.Create(ctx, trustedShoot2)).To(Succeed())
 			Expect(fakeClient.Create(ctx, nonTrustedShoot3)).To(Succeed())
+			Expect(fakeClient.Create(ctx, nonTrustedShoot4)).To(Succeed())
 
 			res, err := gc.Reconcile(ctx, reconcile.Request{})
 			Expect(err).NotTo(HaveOccurred())
