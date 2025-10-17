@@ -20,17 +20,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/constants"
 )
 
 const (
 	// ControllerName is the name of the shoot trust configurator.
 	ControllerName = "shoot-trust-configurator"
-
 	// FinalizerName is the finalizer that is added to shoots to ensure proper cleanup of the OIDC resource.
 	FinalizerName = "authentication.gardener.cloud/shoot-trust-configurator"
-
-	// AnnotationTrustedShoot is the annotation that marks a Shoot to be trusted in the Garden cluster.
-	AnnotationTrustedShoot = "authentication.gardener.cloud/trusted"
 )
 
 // SetupWithManager specifies how the controller is built
@@ -75,7 +73,7 @@ func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 		return false
 	}
 	// Specifies whether the Shoot should be registered as a trusted cluster in the Garden cluster.
-	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[constants.AnnotationTrustedShoot]); !trusted {
 		return false
 	}
 	return true
