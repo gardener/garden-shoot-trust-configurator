@@ -6,14 +6,13 @@ package garbagecollector
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/controllerutils"
 	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -50,7 +49,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 	objList := &metav1.PartialObjectMetadataList{}
 	objList.SetGroupVersionKind(authenticationv1alpha1.GroupVersion.WithKind("OpenIDConnectList"))
 	if err := r.Client.List(ctx, objList, label); err != nil {
-		return reconcile.Result{}, fmt.Errorf("failed listing OIDCs: %w", err)
+		return reconcile.Result{}, err
 	}
 
 	for _, obj := range objList.Items {
@@ -64,12 +63,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 	for oidcName := range objectsToGarbageCollect {
 		oidc := authenticationv1alpha1.OpenIDConnect{}
 		if err := r.Client.Get(ctx, client.ObjectKey{Name: oidcName}, &oidc); err != nil {
-			if apierrors.IsNotFound(err) {
-				// Object already deleted, nothing to do.
+			if client.IgnoreNotFound(err) != nil {
+				log.Error(err, "Error retrieving OIDC resource", "oidc", oidc.Name)
 				continue
 			}
-			log.Error(err, "Error retrieving OIDC resource from store", "oidc", oidcName)
-			continue
 		}
 
 		shootNamespacedName, err := parseOIDCResourceName(&oidc)
@@ -82,14 +79,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 		err = r.Client.Get(ctx, shootNamespacedName, shoot)
 		if err != nil {
 			if client.IgnoreNotFound(err) != nil {
-				log.Error(err, "Error retrieving shoot from store", "shoot", shootNamespacedName)
+				log.Error(err, "Error retrieving shoot", "shoot", shootNamespacedName)
 				continue
 			}
 
 			log.Info("Shoot not found, deleting OIDC resource", "shoot", shootNamespacedName, "oidc", oidc.Name)
 			if err := r.Client.Delete(ctx, &oidc); err != nil {
-				log.Error(err, "Error deleting OIDC resource", "oidc", oidc.Name)
-				continue
+				if client.IgnoreNotFound(err) != nil {
+					log.Error(err, "Error deleting OIDC resource", "oidc", oidc.Name)
+					continue
+				}
 			}
 			log.Info("Deleted OIDC resource", "oidc", oidc.Name)
 			continue
@@ -98,8 +97,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 		if trusted, _ := strconv.ParseBool(shoot.Annotations[constants.AnnotationTrustedShoot]); !trusted {
 			log.Info("Shoot is not trusted anymore, deleting OIDC resource", "shoot", shootNamespacedName, "oidc", oidc.Name)
 			if err := r.Client.Delete(ctx, &oidc); err != nil {
-				log.Error(err, "Error deleting OIDC resource", "oidc", oidc.Name)
-				continue
+				if client.IgnoreNotFound(err) != nil {
+					log.Error(err, "Error deleting OIDC resource", "oidc", oidc.Name)
+					continue
+				}
 			}
 			log.Info("Deleted OIDC resource", "oidc", oidc.Name)
 		}
@@ -114,7 +115,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 func parseOIDCResourceName(oidc *authenticationv1alpha1.OpenIDConnect) (types.NamespacedName, error) {
 	parts := strings.SplitN(oidc.Name, constants.Separator, 3)
 	if len(parts) != 3 {
-		return types.NamespacedName{}, fmt.Errorf("invalid OIDC resource name format: %s", oidc.Name)
+		return types.NamespacedName{}, errors.New("invalid OIDC resource name format")
 	}
 	return types.NamespacedName{
 		Namespace: parts[0],

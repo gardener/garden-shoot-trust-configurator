@@ -48,7 +48,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// We have a garbage collection mechanism to clean up old OIDC resources that are not referenced by any shoot anymore.
 			return reconcile.Result{}, nil
 		}
-		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
+		return reconcile.Result{}, fmt.Errorf("error retrieving shoot: %w", err)
 	}
 
 	if shoot.DeletionTimestamp != nil {
@@ -168,6 +168,7 @@ func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDCon
 	}
 }
 
+// The expected format is "<namespace>--<name>--<uid>".
 func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
 	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
 }
