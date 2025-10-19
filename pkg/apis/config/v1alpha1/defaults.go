@@ -42,3 +42,10 @@ func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
 		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}
 }
+
+// SetDefaults_OIDCConfig sets defaults for the OIDCConfig object.
+func SetDefaults_OIDCConfig(obj *OIDCConfig) {
+	if obj.ClientID == "" {
+		obj.ClientID = "garden"
+	}
+}

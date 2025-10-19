@@ -45,4 +45,15 @@ type ShootControllerConfig struct {
 	// SyncPeriod is the duration how often the controller performs its reconciliation.
 	// +optional
 	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
+	// OIDCConfig is the configuration for the OIDC resources which are created for trusted shoots.
+	// +optional
+	OIDCConfig *OIDCConfig `json:"oidcConfig"`
+}
+
+// OIDCConfig is the configuration for the OIDC resources created for trusted shoots.
+type OIDCConfig struct {
+	// ClientID is the audience used in the OIDC resources created for trusted shoots.
+	// Default is "garden".
+	// +optional
+	ClientID string `json:"clientID"`
 }

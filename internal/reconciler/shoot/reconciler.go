@@ -99,6 +99,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		prefix         = buildPrefix(shoot)
 		userNamePrefix = prefix
 		groupsPrefix   = prefix
+		clientID       = r.Config.OIDCConfig.ClientID
 	)
 
 	oidc := emptyOIDC(shoot)
@@ -108,9 +109,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			labelManagedByKey: labelManagedByValue,
 		}
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
-			IssuerURL: issuerURL,
-			// TODO(theoddora): Consider configuring ClientID based on landscape
-			ClientID:       "garden",
+			IssuerURL:      issuerURL,
+			ClientID:       clientID,
 			UsernameClaim:  &userNameClaim,
 			UsernamePrefix: &userNamePrefix,
 			GroupsClaim:    &groupsClaim,

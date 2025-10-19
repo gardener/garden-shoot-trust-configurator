@@ -93,4 +93,28 @@ var _ = Describe("Defaults", func() {
 			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
 		})
 	})
+
+	Describe("#SetDefaults_OIDCConfig", func() {
+		var obj *OIDCConfig
+
+		BeforeEach(func() {
+			obj = &OIDCConfig{}
+		})
+
+		It("should default the object", func() {
+			SetDefaults_OIDCConfig(obj)
+
+			Expect(obj.ClientID).To(Equal("garden"))
+		})
+
+		It("should not overwrite existing values", func() {
+			obj := &OIDCConfig{
+				ClientID: "custom-client-id",
+			}
+
+			SetDefaults_OIDCConfig(obj)
+
+			Expect(obj.ClientID).To(Equal("custom-client-id"))
+		})
+	})
 })
