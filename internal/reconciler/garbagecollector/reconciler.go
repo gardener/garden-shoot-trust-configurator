@@ -67,6 +67,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ reconcile.Request) (reconc
 				log.Error(err, "Error retrieving OIDC resource", "oidc", oidc.Name)
 				continue
 			}
+			// Object already deleted, nothing to do.
+			continue
 		}
 
 		shootNamespacedName, err := parseOIDCResourceName(&oidc)
