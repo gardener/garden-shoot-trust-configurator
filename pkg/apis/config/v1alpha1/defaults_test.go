@@ -104,17 +104,17 @@ var _ = Describe("Defaults", func() {
 		It("should default the object", func() {
 			SetDefaults_OIDCConfig(obj)
 
-			Expect(obj.ClientID).To(Equal("garden"))
+			Expect(obj.Audiences).To(Equal([]string{"garden"}))
 		})
 
 		It("should not overwrite existing values", func() {
 			obj := &OIDCConfig{
-				ClientID: "custom-client-id",
+				Audiences: []string{"custom-audience"},
 			}
 
 			SetDefaults_OIDCConfig(obj)
 
-			Expect(obj.ClientID).To(Equal("custom-client-id"))
+			Expect(obj.Audiences).To(Equal([]string{"custom-audience"}))
 		})
 	})
 })

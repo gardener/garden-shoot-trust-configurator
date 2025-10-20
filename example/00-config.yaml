@@ -11,7 +11,8 @@ kind: GardenShootTrustConfiguratorConfiguration
 #   shoot:
 #     syncPeriod: 1h
 #     oidcConfig:
-#       clientID: garden
+#       audiences:
+#         - garden
 #   garbageCollector: 
 #     syncPeriod: 1h
 #     minimumObjectLifetime: 10m

@@ -99,7 +99,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		prefix         = buildPrefix(shoot)
 		userNamePrefix = prefix
 		groupsPrefix   = prefix
-		clientID       = r.Config.OIDCConfig.ClientID
+		// Use the first audience as ClientID
+		// For future improvements, the OIDC resource spec could be extended to support multiple audiences
+		// Ref: https://github.com/gardener/oidc-webhook-authenticator/issues/197
+		clientID = r.Config.OIDCConfig.Audiences[0]
 	)
 
 	oidc := emptyOIDC(shoot)

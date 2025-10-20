@@ -32,7 +32,6 @@ import (
 
 var _ = Describe("Reconciler", func() {
 	const (
-		clientID       = "garden"
 		shootName      = "my-shoot"
 		shootNamespace = "garden-abc"
 		finalizer      = "authentication.gardener.cloud/shoot-trust-configurator"
@@ -63,7 +62,7 @@ var _ = Describe("Reconciler", func() {
 			Config: configv1alpha1.ShootControllerConfig{
 				SyncPeriod: &metav1.Duration{Duration: time.Hour},
 				OIDCConfig: &configv1alpha1.OIDCConfig{
-					ClientID: clientID,
+					Audiences: []string{configv1alpha1.DefaultOIDCClientID},
 				},
 			},
 		}
