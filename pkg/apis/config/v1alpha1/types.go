@@ -8,6 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// DefaultAudience is the default audience used in the OIDC resources for trusted shoots.
+	DefaultAudience = "garden"
+)
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // GardenShootTrustConfiguratorConfiguration defines the configuration for the Gardener garden-shoot-trust-configurator.
@@ -45,4 +50,15 @@ type ShootControllerConfig struct {
 	// SyncPeriod is the duration how often the controller performs its reconciliation.
 	// +optional
 	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
+	// OIDCConfig is the configuration for the OIDC resources which are created for trusted shoots.
+	// +optional
+	OIDCConfig *OIDCConfig `json:"oidcConfig,omitempty"`
+}
+
+// OIDCConfig is the configuration for the OIDC resources created for trusted shoots.
+type OIDCConfig struct {
+	// Audiences is the list of audience identifiers used in the OIDC resources for trusted shoots.
+	// Defaults to ["garden"].
+	// +optional
+	Audiences []string `json:"audiences,omitempty"`
 }

@@ -96,6 +96,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		prefix         = buildPrefix(shoot)
 		userNamePrefix = prefix
 		groupsPrefix   = prefix
+		// Use the first audience as ClientID
+		// For future improvements, the OIDC resource spec could be extended to support multiple audiences
+		// Ref: https://github.com/gardener/oidc-webhook-authenticator/issues/197
+		clientID = r.Config.OIDCConfig.Audiences[0]
 	)
 
 	oidc := emptyOIDC(shoot)
@@ -105,9 +109,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			constants.LabelManagedByKey: constants.LabelManagedByValue,
 		}
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
-			IssuerURL: issuerURL,
-			// TODO(theoddora): Consider configuring ClientID based on landscape
-			ClientID:       "garden",
+			IssuerURL:      issuerURL,
+			ClientID:       clientID,
 			UsernameClaim:  &userNameClaim,
 			UsernamePrefix: &userNamePrefix,
 			GroupsClaim:    &groupsClaim,
