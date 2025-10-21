@@ -128,6 +128,7 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 
 	if err := (&garbagecollector.Reconciler{
 		Config: conf.Controllers.GarbageCollector,
+		Clock:  clock.RealClock{},
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create garbage collector controller: %w", err)
 	}

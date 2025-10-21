@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -23,13 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
-)
-
-const (
-	// labelManagedByKey is a constant for a key of a label on an OIDC resource describing who is managing it.
-	labelManagedByKey = "app.kubernetes.io/managed-by"
-	// labelManagedByValue is a constant for a value of a label on a OIDC describing the value 'garden-shoot-trust-configurator'.
-	labelManagedByValue = "garden-shoot-trust-configurator"
+	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/constants"
 )
 
 // Reconciler reconciles shoot trust configurator information.
@@ -53,7 +48,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// We have a garbage collection mechanism to clean up old OIDC resources that are not referenced by any shoot anymore.
 			return reconcile.Result{}, nil
 		}
-		return reconcile.Result{}, fmt.Errorf("error retrieving shoot from store: %w", err)
+		return reconcile.Result{}, fmt.Errorf("error retrieving shoot: %w", err)
 	}
 
 	if shoot.DeletionTimestamp != nil {
@@ -62,12 +57,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] != v1beta1constants.AnnotationAuthenticationIssuerManaged {
-		log.Info("Shoot does not have expected annotation or their value is not 'managed'", "annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
+		log.Info("Shoot does not have expected annotation or their value is not 'managed'",
+			"annotation", v1beta1constants.AnnotationAuthenticationIssuer, "value", shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer])
 		return r.handleDeletion(ctx, log, shoot)
 	}
 
-	if trusted, _ := strconv.ParseBool(shoot.Annotations[AnnotationTrustedShoot]); !trusted {
-		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource", "annotation", AnnotationTrustedShoot, "value", shoot.Annotations[AnnotationTrustedShoot])
+	if trusted, _ := strconv.ParseBool(shoot.Annotations[constants.AnnotationTrustedShoot]); !trusted {
+		log.Info("Shoot does not have expected annotation or their value is not 'true', clean up OIDC resource",
+			"annotation", constants.AnnotationTrustedShoot, "value", shoot.Annotations[constants.AnnotationTrustedShoot])
 		return r.handleDeletion(ctx, log, shoot)
 	}
 
@@ -105,7 +102,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.Client, oidc, func() error {
 		oidc.Annotations = nil
 		oidc.Labels = map[string]string{
-			labelManagedByKey: labelManagedByValue,
+			constants.LabelManagedByKey: constants.LabelManagedByValue,
 		}
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
 			IssuerURL: issuerURL,
@@ -171,8 +168,9 @@ func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDCon
 	}
 }
 
+// The expected format is "<namespace>--<name>--<uid>".
 func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
-	return fmt.Sprintf("%s--%s--%s", shoot.Namespace, shoot.Name, shoot.UID)
+	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
 }
 
 func buildPrefix(shoot *gardencorev1beta1.Shoot) string {
