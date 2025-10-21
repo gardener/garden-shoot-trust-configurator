@@ -13,6 +13,7 @@ kind: GardenShootTrustConfiguratorConfiguration
 #     oidcConfig:
 #       audiences:
 #       - garden
+#       maxTokenExpiration: 2h
 #   garbageCollector: 
 #     syncPeriod: 1h
 #     minimumObjectLifetime: 10m

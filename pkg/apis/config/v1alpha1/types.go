@@ -5,12 +5,16 @@
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	// DefaultAudience is the default audience used in the OIDC resources for trusted shoots.
 	DefaultAudience = "garden"
+	// DefaultMaxTokenExpiration is the default maximum token expiration duration (2 hours).
+	DefaultMaxTokenExpiration = 2 * time.Hour
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -61,4 +65,9 @@ type OIDCConfig struct {
 	// Defaults to ["garden"].
 	// +optional
 	Audiences []string `json:"audiences,omitempty"`
+	// MaxTokenExpiration sets a limit to the maximum validity duration of a token.
+	// Tokens issued with validity greater than this value will not be verified.
+	// Must be between 5 minutes and 24 hours. Defaults to 2 hours.
+	// +optional
+	MaxTokenExpiration *metav1.Duration `json:"maxTokenExpiration,omitempty"`
 }

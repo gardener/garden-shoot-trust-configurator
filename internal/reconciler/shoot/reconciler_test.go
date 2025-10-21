@@ -62,7 +62,8 @@ var _ = Describe("Reconciler", func() {
 			Config: configv1alpha1.ShootControllerConfig{
 				SyncPeriod: &metav1.Duration{Duration: time.Hour},
 				OIDCConfig: &configv1alpha1.OIDCConfig{
-					Audiences: []string{configv1alpha1.DefaultAudience},
+					Audiences:          []string{configv1alpha1.DefaultAudience},
+					MaxTokenExpiration: &metav1.Duration{Duration: configv1alpha1.DefaultMaxTokenExpiration},
 				},
 			},
 		}
@@ -114,12 +115,13 @@ var _ = Describe("Reconciler", func() {
 					ResourceVersion: "1",
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL:      "https://shoot/issuer",
-					ClientID:       "garden",
-					UsernameClaim:  ptr.To("sub"),
-					UsernamePrefix: ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					GroupsClaim:    ptr.To("groups"),
-					GroupsPrefix:   ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					IssuerURL:                 "https://shoot/issuer",
+					ClientID:                  "garden",
+					UsernameClaim:             ptr.To("sub"),
+					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					GroupsClaim:               ptr.To("groups"),
+					GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					MaxTokenExpirationSeconds: ptr.To(int64(7200)),
 				},
 			},
 		))
@@ -144,12 +146,13 @@ var _ = Describe("Reconciler", func() {
 					ResourceVersion: "1",
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL:      "https://shoot/issuer",
-					ClientID:       "garden",
-					UsernameClaim:  ptr.To("sub"),
-					UsernamePrefix: ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					GroupsClaim:    ptr.To("groups"),
-					GroupsPrefix:   ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					IssuerURL:                 "https://shoot/issuer",
+					ClientID:                  "garden",
+					UsernameClaim:             ptr.To("sub"),
+					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					GroupsClaim:               ptr.To("groups"),
+					GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+					MaxTokenExpirationSeconds: ptr.To(int64(7200)),
 				},
 			},
 		))

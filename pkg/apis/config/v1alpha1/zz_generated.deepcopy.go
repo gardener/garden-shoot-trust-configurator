@@ -92,6 +92,11 @@ func (in *OIDCConfig) DeepCopyInto(out *OIDCConfig) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MaxTokenExpiration != nil {
+		in, out := &in.MaxTokenExpiration, &out.MaxTokenExpiration
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	return
 }
 

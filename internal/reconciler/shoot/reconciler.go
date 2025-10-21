@@ -99,7 +99,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// Use the first audience as ClientID
 		// For future improvements, the OIDC resource spec could be extended to support multiple audiences
 		// Ref: https://github.com/gardener/oidc-webhook-authenticator/issues/197
-		clientID = r.Config.OIDCConfig.Audiences[0]
+		clientID                  = r.Config.OIDCConfig.Audiences[0]
+		seconds                   = int64(r.Config.OIDCConfig.MaxTokenExpiration.Seconds())
+		maxTokenExpirationSeconds = &seconds
 	)
 
 	oidc := emptyOIDC(shoot)
@@ -108,13 +110,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		oidc.Labels = map[string]string{
 			constants.LabelManagedByKey: constants.LabelManagedByValue,
 		}
+
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
-			IssuerURL:      issuerURL,
-			ClientID:       clientID,
-			UsernameClaim:  &userNameClaim,
-			UsernamePrefix: &userNamePrefix,
-			GroupsClaim:    &groupsClaim,
-			GroupsPrefix:   &groupsPrefix,
+			IssuerURL:                 issuerURL,
+			ClientID:                  clientID,
+			UsernameClaim:             &userNameClaim,
+			UsernamePrefix:            &userNamePrefix,
+			GroupsClaim:               &groupsClaim,
+			GroupsPrefix:              &groupsPrefix,
+			MaxTokenExpirationSeconds: maxTokenExpirationSeconds,
 		}
 		return nil
 	}); err != nil {
