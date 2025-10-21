@@ -46,6 +46,6 @@ func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
 // SetDefaults_OIDCConfig sets defaults for the OIDCConfig object.
 func SetDefaults_OIDCConfig(obj *OIDCConfig) {
 	if len(obj.Audiences) == 0 {
-		obj.Audiences = []string{DefaultOIDCClientID}
+		obj.Audiences = []string{DefaultAudience}
 	}
 }

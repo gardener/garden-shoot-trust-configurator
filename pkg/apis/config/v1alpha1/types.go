@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// DefaultOIDCClientID is the default OIDC ClientID used in the OIDC resources for trusted shoots.
-	DefaultOIDCClientID = "garden"
+	// DefaultAudience is the default audience used in the OIDC resources for trusted shoots.
+	DefaultAudience = "garden"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -57,9 +57,8 @@ type ShootControllerConfig struct {
 
 // OIDCConfig is the configuration for the OIDC resources created for trusted shoots.
 type OIDCConfig struct {
-	// Audiences is the list of audience identifiers (ClientIDs) used in the OIDC resources for trusted shoots.
-	// The first entry is used as the primary ClientID. The default ClientID is "garden".
-	// Additional entries can be specified as extra audiences.
+	// Audiences is the list of audience identifiers used in the OIDC resources for trusted shoots.
+	// Defaults to ["garden"].
 	// +optional
 	Audiences []string `json:"audiences,omitempty"`
 }
