@@ -17,29 +17,43 @@ import (
 )
 
 var _ = Describe("Defaults", func() {
-	var obj *GardenShootTrustConfiguratorConfiguration
-
-	BeforeEach(func() {
-		obj = &GardenShootTrustConfiguratorConfiguration{}
-	})
-
 	Describe("#SetDefaults_GardenShootTrustConfiguratorConfiguration", func() {
-		It("should default the log level and format", func() {
-			SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+		var obj *GardenShootTrustConfiguratorConfiguration
 
-			Expect(obj.LogLevel).To(Equal(logger.InfoLevel))
-			Expect(obj.LogFormat).To(Equal(logger.FormatJSON))
+		BeforeEach(func() {
+			obj = &GardenShootTrustConfiguratorConfiguration{}
 		})
 
-		It("should not override existing values", func() {
-			obj = &GardenShootTrustConfiguratorConfiguration{
-				LogLevel:  "warning",
-				LogFormat: "md",
-			}
-			SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+		Context("LogLevel", func() {
+			It("should default log level", func() {
+				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
 
-			Expect(obj.LogLevel).To(Equal("warning"))
-			Expect(obj.LogFormat).To(Equal("md"))
+				Expect(obj.LogLevel).To(Equal(logger.InfoLevel))
+			})
+
+			It("should not overwrite already set value for log level", func() {
+				obj.LogLevel = "warning"
+
+				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+
+				Expect(obj.LogLevel).To(Equal("warning"))
+			})
+		})
+
+		Context("LogFormat", func() {
+			It("should default log format", func() {
+				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+
+				Expect(obj.LogFormat).To(Equal(logger.FormatJSON))
+			})
+
+			It("should not overwrite already set value for log format", func() {
+				obj.LogFormat = "md"
+
+				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+
+				Expect(obj.LogFormat).To(Equal("md"))
+			})
 		})
 	})
 
@@ -50,23 +64,36 @@ var _ = Describe("Defaults", func() {
 			obj = &GarbageCollectorControllerConfig{}
 		})
 
-		It("should default the object", func() {
-			SetDefaults_GarbageCollectorControllerConfig(obj)
+		Context("SyncPeriod", func() {
+			It("should default sync period", func() {
+				SetDefaults_GarbageCollectorControllerConfig(obj)
 
-			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
-			Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 10 * time.Minute})))
+				Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
+			})
+
+			It("should not overwrite already set value for sync period", func() {
+				obj.SyncPeriod = &metav1.Duration{Duration: time.Minute}
+
+				SetDefaults_GarbageCollectorControllerConfig(obj)
+
+				Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
+			})
 		})
 
-		It("should not overwrite existing values", func() {
-			obj := &GarbageCollectorControllerConfig{
-				SyncPeriod:            &metav1.Duration{Duration: time.Minute},
-				MinimumObjectLifetime: &metav1.Duration{Duration: 5 * time.Minute},
-			}
+		Context("MinimumObjectLifetime", func() {
+			It("should default minimum object lifetime", func() {
+				SetDefaults_GarbageCollectorControllerConfig(obj)
 
-			SetDefaults_GarbageCollectorControllerConfig(obj)
+				Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 10 * time.Minute})))
+			})
 
-			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
-			Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 5 * time.Minute})))
+			It("should not overwrite already set value for minimum object lifetime", func() {
+				obj.MinimumObjectLifetime = &metav1.Duration{Duration: 5 * time.Minute}
+
+				SetDefaults_GarbageCollectorControllerConfig(obj)
+
+				Expect(obj.MinimumObjectLifetime).To(PointTo(Equal(metav1.Duration{Duration: 5 * time.Minute})))
+			})
 		})
 	})
 
@@ -77,20 +104,40 @@ var _ = Describe("Defaults", func() {
 			obj = &ShootControllerConfig{}
 		})
 
-		It("should default the object", func() {
-			SetDefaults_ShootControllerConfig(obj)
+		Context("SyncPeriod", func() {
+			It("should default sync period", func() {
+				SetDefaults_ShootControllerConfig(obj)
 
-			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
+				Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
+			})
+
+			It("should not overwrite already set value for sync period", func() {
+				obj.SyncPeriod = &metav1.Duration{Duration: time.Minute}
+
+				SetDefaults_ShootControllerConfig(obj)
+
+				Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
+			})
 		})
 
-		It("should not overwrite existing values", func() {
-			obj := &ShootControllerConfig{
-				SyncPeriod: &metav1.Duration{Duration: time.Minute},
-			}
+		Context("OIDCConfig", func() {
+			It("should initialize OIDC config when nil", func() {
+				SetDefaults_ShootControllerConfig(obj)
 
-			SetDefaults_ShootControllerConfig(obj)
+				Expect(obj.OIDCConfig).NotTo(BeNil())
+			})
 
-			Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Minute})))
+			It("should not overwrite already set OIDC config", func() {
+				existingConfig := &OIDCConfig{
+					Audiences:          []string{"custom-audience"},
+					MaxTokenExpiration: &metav1.Duration{Duration: 1 * time.Hour},
+				}
+				obj.OIDCConfig = existingConfig
+
+				SetDefaults_ShootControllerConfig(obj)
+
+				Expect(obj.OIDCConfig).To(Equal(existingConfig))
+			})
 		})
 	})
 
@@ -101,20 +148,36 @@ var _ = Describe("Defaults", func() {
 			obj = &OIDCConfig{}
 		})
 
-		It("should default the object", func() {
-			SetDefaults_OIDCConfig(obj)
+		Context("Audiences", func() {
+			It("should default audiences", func() {
+				SetDefaults_OIDCConfig(obj)
 
-			Expect(obj.Audiences).To(Equal([]string{"garden"}))
+				Expect(obj.Audiences).To(Equal([]string{"garden"}))
+			})
+
+			It("should not overwrite already set value for audiences", func() {
+				obj.Audiences = []string{"custom-audience"}
+
+				SetDefaults_OIDCConfig(obj)
+
+				Expect(obj.Audiences).To(Equal([]string{"custom-audience"}))
+			})
 		})
 
-		It("should not overwrite existing values", func() {
-			obj := &OIDCConfig{
-				Audiences: []string{"custom-audience"},
-			}
+		Context("MaxTokenExpiration", func() {
+			It("should default max token expiration", func() {
+				SetDefaults_OIDCConfig(obj)
 
-			SetDefaults_OIDCConfig(obj)
+				Expect(obj.MaxTokenExpiration).To(PointTo(Equal(metav1.Duration{Duration: 2 * time.Hour})))
+			})
 
-			Expect(obj.Audiences).To(Equal([]string{"custom-audience"}))
+			It("should not overwrite already set value for max token expiration", func() {
+				obj.MaxTokenExpiration = &metav1.Duration{Duration: 1 * time.Hour}
+
+				SetDefaults_OIDCConfig(obj)
+
+				Expect(obj.MaxTokenExpiration).To(PointTo(Equal(metav1.Duration{Duration: 1 * time.Hour})))
+			})
 		})
 	})
 })

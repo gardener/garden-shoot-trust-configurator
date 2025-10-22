@@ -41,11 +41,17 @@ func SetDefaults_ShootControllerConfig(obj *ShootControllerConfig) {
 	if obj.SyncPeriod == nil {
 		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}
+	if obj.OIDCConfig == nil {
+		obj.OIDCConfig = &OIDCConfig{}
+	}
 }
 
 // SetDefaults_OIDCConfig sets defaults for the OIDCConfig object.
 func SetDefaults_OIDCConfig(obj *OIDCConfig) {
 	if len(obj.Audiences) == 0 {
 		obj.Audiences = []string{DefaultAudience}
+	}
+	if obj.MaxTokenExpiration == nil {
+		obj.MaxTokenExpiration = &metav1.Duration{Duration: DefaultMaxTokenExpiration}
 	}
 }

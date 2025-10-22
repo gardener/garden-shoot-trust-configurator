@@ -5,6 +5,8 @@
 package validation
 
 import (
+	"time"
+
 	"github.com/gardener/gardener/pkg/logger"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -25,6 +27,36 @@ func ValidateGardenShootTrustConfiguratorConfiguration(conf *v1alpha1.GardenShoo
 	if conf.LogFormat != "" {
 		if !sets.New(logger.AllLogFormats...).Has(conf.LogFormat) {
 			allErrs = append(allErrs, field.NotSupported(field.NewPath("logFormat"), conf.LogFormat, logger.AllLogFormats))
+		}
+	}
+
+	allErrs = append(allErrs, validateControllers(&conf.Controllers, field.NewPath("controllers"))...)
+
+	return allErrs
+}
+
+// validateControllers validates the controllers configuration.
+func validateControllers(controllers *v1alpha1.ControllerConfiguration, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if controllers.Shoot.OIDCConfig != nil {
+		allErrs = append(allErrs, validateOIDCConfig(controllers.Shoot.OIDCConfig, fldPath.Child("shoot", "oidcConfig"))...)
+	}
+
+	return allErrs
+}
+
+// validateOIDCConfig validates the OIDC configuration.
+func validateOIDCConfig(config *v1alpha1.OIDCConfig, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if config.MaxTokenExpiration != nil {
+		duration := config.MaxTokenExpiration.Duration
+		if duration < 5*time.Minute {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("maxTokenExpiration"), "must be at least 5 minutes"))
+		}
+		if duration > 24*time.Hour {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("maxTokenExpiration"), "must not exceed 24 hours"))
 		}
 	}
 
