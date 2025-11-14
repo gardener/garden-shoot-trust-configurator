@@ -24,6 +24,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Named(ControllerName).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
+			ReconciliationTimeout:   controllerutils.DefaultReconciliationTimeout,
 		}).
 		WatchesRawSource(controllerutils.EnqueueOnce).
 		Complete(r)
