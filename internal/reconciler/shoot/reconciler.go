@@ -88,15 +88,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// This should check if another OIDC resource with the same issuerURL already exists
 
 	var (
-		userNameClaim  = "sub"
-		groupsClaim    = "groups"
-		prefix         = buildPrefix(shoot)
-		userNamePrefix = prefix
-		groupsPrefix   = prefix
-		// Use the first audience as ClientID
-		// For future improvements, the OIDC resource spec could be extended to support multiple audiences
-		// Ref: https://github.com/gardener/oidc-webhook-authenticator/issues/197
-		clientID                  = r.Config.OIDCConfig.Audiences[0]
+		userNameClaim             = "sub"
+		groupsClaim               = "groups"
+		prefix                    = buildPrefix(shoot)
+		userNamePrefix            = prefix
+		groupsPrefix              = prefix
 		seconds                   = int64(r.Config.OIDCConfig.MaxTokenExpiration.Seconds())
 		maxTokenExpirationSeconds = &seconds
 	)
@@ -110,7 +106,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		oidc.Spec = authenticationv1alpha1.OIDCAuthenticationSpec{
 			IssuerURL:                 issuerURL,
-			ClientID:                  clientID,
+			Audiences:                 r.Config.OIDCConfig.Audiences,
 			UsernameClaim:             &userNameClaim,
 			UsernamePrefix:            &userNamePrefix,
 			GroupsClaim:               &groupsClaim,

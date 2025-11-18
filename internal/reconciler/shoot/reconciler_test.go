@@ -116,7 +116,7 @@ var _ = Describe("Reconciler", func() {
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
 					IssuerURL:                 "https://shoot/issuer",
-					ClientID:                  "garden",
+					Audiences:                 []string{"garden"},
 					UsernameClaim:             ptr.To("sub"),
 					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
 					GroupsClaim:               ptr.To("groups"),
@@ -147,7 +147,7 @@ var _ = Describe("Reconciler", func() {
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
 					IssuerURL:                 "https://shoot/issuer",
-					ClientID:                  "garden",
+					Audiences:                 []string{"garden"},
 					UsernameClaim:             ptr.To("sub"),
 					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
 					GroupsClaim:               ptr.To("groups"),
