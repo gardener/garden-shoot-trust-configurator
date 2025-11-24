@@ -22,7 +22,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: start
 start:
-	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go --config=./example/00-config.yaml 
+	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go --config=./example/00-config.yaml
 
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -58,8 +58,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/... ./pkg/...
 	@bash $(GARDENER_HACK_DIR)/check-typos.sh
 	@bash $(GARDENER_HACK_DIR)/check-file-names.sh
-#TODO(theoddora): re-enable when adding skaffold based local dev setup + charts
-# 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
+	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 # 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
 
 # .PHONY: update-skaffold-deps
@@ -68,7 +67,6 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(YQ) $(VGOPATH) $(MOCKGEN) $(HELM)
-#TODO(theoddora): add charts directory when charts are introduced to the repository
 	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./internal/... ./pkg/...
 	@REPO_ROOT=$(REPO_ROOT) VGOPATH=$(VGOPATH) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(REPO_ROOT)/hack/update-codegen.sh
 	$(MAKE) format

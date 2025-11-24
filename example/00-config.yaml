@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
+
 apiVersion: config.trust-configurator.gardener.cloud/v1alpha1
 kind: GardenShootTrustConfiguratorConfiguration
 
@@ -17,3 +18,13 @@ kind: GardenShootTrustConfiguratorConfiguration
 #   garbageCollector: 
 #     syncPeriod: 1h
 #     minimumObjectLifetime: 10m
+# leaderElection:
+#   leaderElect: true
+#   leaseDuration: 15s
+#   renewDeadline: 10s
+#   retryPeriod: 2s
+#   resourceLock: leases
+#   resourceName: garden-shoot-trust-configurator-leader-election
+#   resourceNamespace: garden
+# server:
+#   healthPort: 8081

@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: application
+description: A Helm chart for Kubernetes to deploy the application related resources of the garden-shoot-trust-configurator.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "garden-shoot-trust-configurator.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- if .Values.additionalLabels.deployment }}
+{{ toYaml .Values.additionalLabels.deployment | trim | indent 4 }}
+{{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.kubeconfig }}
+        checksum/secret-garden-shoot-trust-configurator-kubeconfig: {{ include (print $.Template.BasePath "/secret-kubeconfig.yaml") . | sha256sum }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        {{- if .Values.additionalLabels.deployment }}
+        {{- toYaml .Values.additionalLabels.deployment | trim | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "garden-shoot-trust-configurator.name" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - {{ include "garden-shoot-trust-configurator.name" . }}
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - {{ .Release.Name }}
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+        - name: {{ include "garden-shoot-trust-configurator.name" . }}
+          image: {{ include "image" .Values.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          {{- if .Values.kubeconfig }}
+          - --kubeconfig=/var/run/garden-shoot-trust-configurator/kubeconfig/kubeconfig
+          {{- end }}
+          - --config=/etc/garden-shoot-trust-configurator/config/config.yaml
+          ports:
+            - name: health
+              containerPort: {{ .Values.config.server.healthPort }}
+              protocol: TCP
+            - name: https
+              containerPort: {{ .Values.config.server.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ required ".Values.config.server.healthPort is required" .Values.config.server.healthPort }}
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            {{- if .Values.kubeconfig }}
+            - name: kubeconfig
+              mountPath: /var/run/garden-shoot-trust-configurator/kubeconfig
+              readOnly: true
+            {{- end }}
+            - name: garden-shoot-trust-configurator-config
+              mountPath: /etc/garden-shoot-trust-configurator/config
+      volumes:
+      {{- if .Values.kubeconfig }}
+      - name: kubeconfig
+        secret:
+          secretName: garden-shoot-trust-configurator-kubeconfig
+          defaultMode: 420
+      {{- end }}
+      - name: garden-shoot-trust-configurator-config
+        configMap:
+          name: {{ include "garden-shoot-trust-configurator.config.name" . }}
+

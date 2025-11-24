@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Application chart values for `garden-shoot-trust-configurator` that will create the needed RBAC in the Virtual Garden cluster.
+application:
+  enabled: false
+
+# Runtime chart values for `garden-shoot-trust-configurator` that will deploy the controller in the Runtime Garden cluster.
+runtime:
+  replicaCount: 1
+
+  image:
+    repository: europe-docker.pkg.dev/gardener-project/public/gardener/garden-shoot-trust-configurator
+    pullPolicy: IfNotPresent
+    tag: latest
+
+  imagePullSecrets: []
+
+  # Kubeconfig to the target (virtual) cluster
+  kubeconfig: 
+
+  # Controller configuration values, passed as a config file
+  config:
+    server:
+      healthPort: 8081
+      port: 10443
+    leaderElection:
+      leaderElect: true
+      leaseDuration: 15s
+      renewDeadline: 10s
+      retryPeriod: 2s
+      resourceLock: leases
+      resourceName: garden-shoot-trust-configurator-leader-election
+      resourceNamespace: garden
+    logLevel: info
+    logFormat: json
+    controllers:
+      shoot:
+        syncPeriod: 1h
+        oidcConfig:
+          audiences:
+          - garden
+          maxTokenExpiration: 2h
+      garbageCollector: 
+        syncPeriod: 1h
+        minimumObjectLifetime: 10m
+
+  additionalLabels:
+    deployment: {}
+    hpa: {}
+  additionalAnnotations:
+    service: {}
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: false
+    # TODO(theoddora) Enable Vertical Pod Autoscaler
+    vpa: {}

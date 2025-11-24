@@ -8,6 +8,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 )
 
 const (
@@ -15,6 +16,10 @@ const (
 	DefaultAudience = "garden"
 	// DefaultMaxTokenExpiration is the default maximum token expiration duration (2 hours).
 	DefaultMaxTokenExpiration = 2 * time.Hour
+	// DefaultLockObjectNamespace is the default lock namespace for leader election.
+	DefaultLockObjectNamespace = "garden"
+	// DefaultLockObjectName is the default lock name for leader election.
+	DefaultLockObjectName = "garden-shoot-trust-configurator-leader-election"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -23,12 +28,17 @@ const (
 type GardenShootTrustConfiguratorConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 
+	// LeaderElection defines the configuration of leader election client.
+	// +optional
+	LeaderElection *componentbaseconfigv1alpha1.LeaderElectionConfiguration `json:"leaderElection,omitempty"`
 	// LogLevel is the level/severity for the logs. Must be one of [info,debug,error].
 	LogLevel string `json:"logLevel"`
 	// LogFormat is the output format for the logs. Must be one of [text,json].
 	LogFormat string `json:"logFormat"`
 	// Controllers defines the configuration of the controllers.
 	Controllers ControllerConfiguration `json:"controllers"`
+	// Server defines the configuration of the HTTP server.
+	Server ServerConfiguration `json:"server"`
 }
 
 // ControllerConfiguration defines the configuration of the controllers.
@@ -70,4 +80,11 @@ type OIDCConfig struct {
 	// Must be between 5 minutes and 24 hours. Defaults to 2 hours.
 	// +optional
 	MaxTokenExpiration *metav1.Duration `json:"maxTokenExpiration,omitempty"`
+}
+
+// ServerConfiguration contains details for the HTTP(S) servers.
+type ServerConfiguration struct {
+	// HealthPort is the configuration serving the healthz endpoint.
+	// +optional
+	HealthPort int `json:"healthPort,omitempty"`
 }
