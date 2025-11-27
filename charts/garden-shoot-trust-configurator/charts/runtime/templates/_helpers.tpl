@@ -2,6 +2,18 @@
 garden-shoot-trust-configurator
 {{- end -}}
 
+{{- define "labels.app.key" -}}
+app.kubernetes.io/name
+{{- end -}}
+{{- define "labels.app.value" -}}
+{{ include "garden-shoot-trust-configurator.name" . }}
+{{- end -}}
+
+{{- define "labels" -}}
+{{ include "labels.app.key" . }}: {{ include "labels.app.value" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
 {{- define "image" -}}
     {{- if hasPrefix "sha256:" (required "$.tag is required" $.tag) -}}
         {{ required "$.repository is required" $.repository }}@{{ required "$.tag is required" $.tag }}
@@ -10,15 +22,19 @@ garden-shoot-trust-configurator
     {{- end -}}
 {{- end -}}
 
+# Warning: The following helper is duplicated in charts/application/templates/_helpers.tpl. Keep them in sync.
+{{- define "leaderelectionid" -}}
+garden-shoot-trust-configurator-leader-election
+{{- end -}}
+
 {{- define "garden-shoot-trust-configurator.config.data" -}}
 config.yaml: |
 {{ include "garden-shoot-trust-configurator.config" . | indent 2 }}
 {{- end -}}
 
 {{- define "garden-shoot-trust-configurator.config.name" -}}
-garden-shoot-trust-configurator-configmap
+garden-shoot-trust-configurator-config
 {{- end -}}
-
 
 {{- define "garden-shoot-trust-configurator.config" -}}
 apiVersion: config.trust-configurator.gardener.cloud/v1alpha1
@@ -37,8 +53,9 @@ controllers:
     minimumObjectLifetime: {{  .Values.config.controllers.garbageCollector.minimumObjectLifetime }}
 server:
   healthPort: {{ .Values.config.server.healthPort }}
-  port: {{ .Values.config.server.port }}
 leaderElection:
+  resourceName: {{ include "leaderelectionid" . }}
+  resourceNamespace: {{ .Release.Namespace  }}
   {{- if .Values.config.leaderElection.leaderElect }}
   leaderElect: {{ .Values.config.leaderElection.leaderElect }}
   {{- end }}
@@ -53,11 +70,5 @@ leaderElection:
   {{- end }}
   {{- if .Values.config.leaderElection.resourceLock }}
   resourceLock: {{ .Values.config.leaderElection.resourceLock }}
-  {{- end }}
-  {{- if .Values.config.leaderElection.resourceName }}
-  resourceName: {{ .Values.config.leaderElection.resourceName }}
-  {{- end }}
-  {{- if .Values.config.leaderElection.resourceNamespace }}
-  resourceNamespace: {{ .Values.config.leaderElection.resourceNamespace }}
   {{- end }}
 {{- end -}}

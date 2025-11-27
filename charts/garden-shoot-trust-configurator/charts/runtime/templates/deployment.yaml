@@ -8,12 +8,8 @@ metadata:
   name: {{ include "garden-shoot-trust-configurator.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- if .Values.additionalLabels.deployment }}
-{{ toYaml .Values.additionalLabels.deployment | trim | indent 4 }}
-{{- end }}
+{{ include "labels" . | indent 4 }}
+    high-availability-config.resources.gardener.cloud/type: server
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: 5
@@ -24,20 +20,15 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+{{ include "labels" . | indent 6 }}
   template:
     metadata:
       annotations:
-        {{- if .Values.kubeconfig }}
-        checksum/secret-garden-shoot-trust-configurator-kubeconfig: {{ include (print $.Template.BasePath "/secret-kubeconfig.yaml") . | sha256sum }}
-        {{- end }}
+        checksum/configmap-{{ include "garden-shoot-trust-configurator.config.name" . }}: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
-        app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        {{- if .Values.additionalLabels.deployment }}
-        {{- toYaml .Values.additionalLabels.deployment | trim | nindent 8 }}
-        {{- end }}
+        networking.gardener.cloud/to-dns: allowed
+        networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443: allowed
+{{ include "labels" . | indent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -45,6 +36,9 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "garden-shoot-trust-configurator.name" . }}
       automountServiceAccountToken: false
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -70,16 +64,13 @@ spec:
           image: {{ include "image" .Values.image }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-          {{- if .Values.kubeconfig }}
-          - --kubeconfig=/var/run/garden-shoot-trust-configurator/kubeconfig/kubeconfig
+          {{- if .Values.projectedKubeconfig }}
+          - --kubeconfig={{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}/kubeconfig
           {{- end }}
           - --config=/etc/garden-shoot-trust-configurator/config/config.yaml
           ports:
             - name: health
               containerPort: {{ .Values.config.server.healthPort }}
-              protocol: TCP
-            - name: https
-              containerPort: {{ .Values.config.server.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -88,26 +79,40 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 30
             timeoutSeconds: 5
+          {{- if .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
           volumeMounts:
-            {{- if .Values.kubeconfig }}
-            - name: kubeconfig
-              mountPath: /var/run/garden-shoot-trust-configurator/kubeconfig
-              readOnly: true
-            {{- end }}
             - name: garden-shoot-trust-configurator-config
               mountPath: /etc/garden-shoot-trust-configurator/config
+            {{- if .Values.projectedKubeconfig }}
+            - mountPath: {{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}
+              name: kubeconfig
+              readOnly: true
+            {{- end }}   
       volumes:
-      {{- if .Values.kubeconfig }}
-      - name: kubeconfig
-        secret:
-          secretName: garden-shoot-trust-configurator-kubeconfig
-          defaultMode: 420
-      {{- end }}
       - name: garden-shoot-trust-configurator-config
         configMap:
           name: {{ include "garden-shoot-trust-configurator.config.name" . }}
-
+      {{- if .Values.projectedKubeconfig }}
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+            - secret:
+                items:
+                  - key: kubeconfig
+                    path: kubeconfig
+                name: {{ required ".Values.projectedKubeconfig.genericKubeconfigSecretName is required" .Values.projectedKubeconfig.genericKubeconfigSecretName }}
+                optional: false
+            - secret:
+                items:
+                  - key: token
+                    path: token
+                name: {{ required ".Values.projectedKubeconfig.tokenSecretName is required" .Values.projectedKubeconfig.tokenSecretName }}
+                optional: false
+      {{- end }}
+      

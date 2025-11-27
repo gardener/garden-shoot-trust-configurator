@@ -46,6 +46,13 @@ repo_image="europe-docker.pkg.dev/gardener-project/public/gardener/garden-shoot-
 yq -i '.runtime.image.repository = "'"$repo_image"'"' "$values_file"
 # yq -i '.runtime.image.tag = "'"$trust_configurator_version"'"' "$values_file"
 
+echo "Exporting Generic Token Kubeconfig secret name."
+
+generic_kubeconfig_secret_name=$(kubectl --kubeconfig "$KIND_KUBECONFIG" -n garden get secret -o=custom-columns='name:.metadata.name' | grep generic)
+if [[ $generic_kubeconfig_secret_name == "" ]]; then
+  fail "Generic Token Kubeconfig not found"
+fi
+
 # Virtual cluster installation
 echo "Patching Helm values: $values_file"
 
@@ -63,62 +70,6 @@ helm upgrade \
 
 echo "garden-shoot-trust-configurator installed successfully in the virtual cluster."
 
-echo "Generating kubeconfig for the garden-shoot-trust-configurator to access the runtime cluster."
-
-cluster_ca_data=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-cluster_server=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.server}')
-token=$(kubectl -n garden create token $TRUST_CONFIGURATOR_NAME --duration 48h --kubeconfig "$VIRTUAL_KUBECONFIG")
-
-tmpfile=$(mktemp)
-
-cat <<EOF > "$tmpfile"
----
-apiVersion: v1
-kind: Config
-current-context: cluster
-contexts:
-- context:
-    cluster: cluster
-    user: garden-shoot-trust-configurator
-  name: cluster
-clusters:
-- cluster:
-    certificate-authority-data: $cluster_ca_data
-    server: $cluster_server
-  name: cluster
-users:
-- name: garden-shoot-trust-configurator
-  user:
-    token: $token
-EOF
-
-yq -i '
-  .runtime.kubeconfig = load_str("'"$tmpfile"'")
-  | (.runtime.kubeconfig style="literal")
-' "$values_file"
-
-rm -f "$tmpfile"
-
-# Kind Gardener cluster installation
-yq -i '
-  .runtime.additionalLabels.deployment = {
-    "high-availability-config.resources.gardener.cloud/type": "server",
-    "networking.gardener.cloud/to-dns": "allowed",
-    "networking.gardener.cloud/to-public-networks": "allowed",
-    "networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443": "allowed",
-    "networking.resources.gardener.cloud/to-all-istio-ingresses-istio-ingressgateway-tcp-9443": "allowed"
-  }
-  |
-  .runtime.additionalLabels.hpa = {
-    "high-availability-config.resources.gardener.cloud/type": "server"
-  }
-  |
-  .runtime.additionalAnnotations.service = {
-    "networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports": "[{\"protocol\":\"TCP\",\"port\":10443}]",
-    "networking.resources.gardener.cloud/from-all-garden-scrape-targets-allowed-ports": "[{\"protocol\":\"TCP\",\"port\":10443}]"
-  }
-' "$values_file"
-
 echo "Installing garden-shoot-trust-configurator in the runtime cluster."
 
 helm upgrade \
@@ -128,6 +79,8 @@ helm upgrade \
   --values "$values_file" \
   --set application.enabled="false" \
   --set runtime.enabled="true" \
+  --set runtime.projectedKubeconfig.baseMountPath="/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig" \
+  --set runtime.projectedKubeconfig.genericKubeconfigSecretName="$generic_kubeconfig_secret_name" \
   --namespace garden \
   --kubeconfig "$KIND_KUBECONFIG" \
   $TRUST_CONFIGURATOR_NAME \

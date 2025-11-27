@@ -8,9 +8,7 @@ metadata:
   name: {{ include "garden-shoot-trust-configurator.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{ include "labels" . | indent 4 }}
   {{- if .Values.additionalAnnotations.service }}
   annotations:
     {{- toYaml .Values.additionalAnnotations.service | trim | nindent 4 }}
@@ -18,12 +16,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: {{ include "garden-shoot-trust-configurator.name" . }}
+{{ include "labels" . | indent 6 }}
   ports:
-    - name: https
-      port: 443
-      targetPort: {{ .Values.config.server.port }}
-      protocol: TCP
     - name: health
       port: 8081
       targetPort: {{ .Values.config.server.healthPort }}

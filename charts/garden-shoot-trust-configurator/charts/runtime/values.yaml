@@ -11,22 +11,21 @@ image:
 
 imagePullSecrets: []
 
-# Kubeconfig to the target (virtual) cluster
-kubeconfig: 
+projectedKubeconfig:
+  baseMountPath: /var/run/secrets/gardener.cloud
+  genericKubeconfigSecretName: generic-token-kubeconfig
+  tokenSecretName: garden-shoot-trust-configurator-access-token
 
 # Controller configuration values, passed as a config file
 config:
   server:
     healthPort: 8081
-    port: 10443
   leaderElection:
     leaderElect: true
     leaseDuration: 15s
     renewDeadline: 10s
     retryPeriod: 2s
     resourceLock: leases
-    resourceName: garden-shoot-trust-configurator-leader-election
-    resourceNamespace: garden
   logLevel: info
   logFormat: json
   controllers:
@@ -40,9 +39,6 @@ config:
       syncPeriod: 1h
       minimumObjectLifetime: 10m
 
-additionalLabels:
-  deployment: {}
-  hpa: {}
 additionalAnnotations:
   service: {}
 
@@ -50,6 +46,8 @@ resources:
   requests:
     cpu: 100m
     memory: 64Mi
+
+priorityClassName: gardener-garden-system-400
 
 autoscaling:
   enabled: false

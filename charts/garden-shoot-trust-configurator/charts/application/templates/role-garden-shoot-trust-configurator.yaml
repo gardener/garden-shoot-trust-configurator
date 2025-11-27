@@ -3,31 +3,41 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: {{ include "garden-shoot-trust-configurator.name" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
 {{ include "labels" . | indent 4 }}
 rules:
 - apiGroups:
-  - authentication.gardener.cloud
+  - ""
   resources:
-  - openidconnects
+  - secrets
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
-  - core.gardener.cloud
+  - coordination.k8s.io
   resources:
-  - shoots
+  - leases
   verbs:
-  - get
+  - create
   - list
   - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  resourceNames:
+  - {{ include "leaderelectionid" . }}
+  verbs:
   - update
-  - patch
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
