@@ -25,6 +25,6 @@ kind: GardenShootTrustConfiguratorConfiguration
 #   retryPeriod: 2s
 #   resourceLock: leases
 #   resourceName: garden-shoot-trust-configurator-leader-election
-#   resourceNamespace: garden
+#   resourceNamespace: kube-system
 # server:
 #   healthPort: 8081

@@ -55,7 +55,7 @@ server:
   healthPort: {{ .Values.config.server.healthPort }}
 leaderElection:
   resourceName: {{ include "leaderelectionid" . }}
-  resourceNamespace: {{ .Release.Namespace  }}
+  resourceNamespace: kube-system
   {{- if .Values.config.leaderElection.leaderElect }}
   leaderElect: {{ .Values.config.leaderElection.leaderElect }}
   {{- end }}

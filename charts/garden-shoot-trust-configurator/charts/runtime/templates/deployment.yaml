@@ -15,9 +15,6 @@ spec:
   revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   selector:
     matchLabels:
 {{ include "labels" . | indent 6 }}
@@ -30,10 +27,6 @@ spec:
         networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443: allowed
 {{ include "labels" . | indent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       serviceAccountName: {{ include "garden-shoot-trust-configurator.name" . }}
       automountServiceAccountToken: false
       {{- if .Values.priorityClassName }}
@@ -64,9 +57,7 @@ spec:
           image: {{ include "image" .Values.image }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-          {{- if .Values.projectedKubeconfig }}
           - --kubeconfig={{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}/kubeconfig
-          {{- end }}
           - --config=/etc/garden-shoot-trust-configurator/config/config.yaml
           ports:
             - name: health
@@ -77,7 +68,7 @@ spec:
               path: /healthz
               port: {{ required ".Values.config.server.healthPort is required" .Values.config.server.healthPort }}
               scheme: HTTP
-            initialDelaySeconds: 30
+            initialDelaySeconds: 15
             timeoutSeconds: 5
           {{- if .Values.resources }}
           resources:
@@ -88,16 +79,14 @@ spec:
           volumeMounts:
             - name: garden-shoot-trust-configurator-config
               mountPath: /etc/garden-shoot-trust-configurator/config
-            {{- if .Values.projectedKubeconfig }}
+              readOnly: true
             - mountPath: {{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}
               name: kubeconfig
               readOnly: true
-            {{- end }}   
       volumes:
       - name: garden-shoot-trust-configurator-config
         configMap:
           name: {{ include "garden-shoot-trust-configurator.config.name" . }}
-      {{- if .Values.projectedKubeconfig }}
       - name: kubeconfig
         projected:
           defaultMode: 420
@@ -114,5 +103,3 @@ spec:
                     path: token
                 name: {{ required ".Values.projectedKubeconfig.tokenSecretName is required" .Values.projectedKubeconfig.tokenSecretName }}
                 optional: false
-      {{- end }}
-      

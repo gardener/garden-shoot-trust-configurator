@@ -15,4 +15,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{ include "garden-shoot-trust-configurator.name" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: kube-system

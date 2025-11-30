@@ -2,20 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Application chart values for `garden-shoot-trust-configurator` that will create the needed RBAC in the Virtual Garden cluster.
+# Application chart values for garden-shoot-trust-configurator that will create the needed RBAC in the Virtual Garden cluster.
 application:
   enabled: false
 
-# Runtime chart values for `garden-shoot-trust-configurator` that will deploy the controller in the Runtime Garden cluster.
+# Runtime chart values for garden-shoot-trust-configurator that will deploy the controller in the Runtime Garden cluster.
 runtime:
+  enabled: false
+  
   replicaCount: 1
 
   image:
     repository: europe-docker.pkg.dev/gardener-project/public/gardener/garden-shoot-trust-configurator
     pullPolicy: IfNotPresent
     tag: latest
-
-  imagePullSecrets: []
   
   projectedKubeconfig:
     baseMountPath: /var/run/secrets/gardener.cloud

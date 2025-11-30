@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
@@ -49,8 +48,12 @@ func NewCommand() *cobra.Command {
 		Use:   AppName,
 		Short: "Launch the " + AppName,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			verflag.PrintAndExitIfRequested()
-			cliflag.PrintFlags(cmd.Flags())
+			if err := opt.Complete(); err != nil {
+				return err
+			}
+			if err := opt.Validate(); err != nil {
+				return fmt.Errorf("cannot validate options: %w", err)
+			}
 
 			logLevel, logFormat := opt.LogConfig()
 			log, err := logger.NewZapLogger(logLevel, logFormat)
@@ -69,19 +72,13 @@ func NewCommand() *cobra.Command {
 			return run(cmd.Context(), log, opt.config)
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
-			if err := opt.Complete(); err != nil {
-				return err
-			}
-			if err := opt.Validate(); err != nil {
-				return fmt.Errorf("cannot validate options: %w", err)
-			}
+			verflag.PrintAndExitIfRequested()
 			return nil
 		},
 	}
 
 	flags := cmd.Flags()
 	opt.addFlags(flags)
-	verflag.AddFlags(flags)
 	flags.AddGoFlagSet(goflag.CommandLine)
 
 	return cmd

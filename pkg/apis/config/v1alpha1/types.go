@@ -17,7 +17,7 @@ const (
 	// DefaultMaxTokenExpiration is the default maximum token expiration duration (2 hours).
 	DefaultMaxTokenExpiration = 2 * time.Hour
 	// DefaultLockObjectNamespace is the default lock namespace for leader election.
-	DefaultLockObjectNamespace = "garden"
+	DefaultLockObjectNamespace = "kube-system"
 	// DefaultLockObjectName is the default lock name for leader election.
 	DefaultLockObjectName = "garden-shoot-trust-configurator-leader-election"
 )

@@ -9,8 +9,6 @@ image:
   pullPolicy: IfNotPresent
   tag: latest
 
-imagePullSecrets: []
-
 projectedKubeconfig:
   baseMountPath: /var/run/secrets/gardener.cloud
   genericKubeconfigSecretName: generic-token-kubeconfig

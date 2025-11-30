@@ -6,6 +6,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "garden-shoot-trust-configurator.name" . }}
+  namespace: kube-system
   labels:
 {{ include "labels" . | indent 4 }}
 roleRef:
@@ -15,4 +16,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{ include "garden-shoot-trust-configurator.name" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: kube-system
