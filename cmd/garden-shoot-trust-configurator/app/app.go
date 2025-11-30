@@ -6,8 +6,10 @@ package app
 
 import (
 	"context"
+	goflag "flag"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -21,6 +23,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,7 +51,6 @@ func NewCommand() *cobra.Command {
 			if err := opt.Complete(); err != nil {
 				return err
 			}
-
 			if err := opt.Validate(); err != nil {
 				return fmt.Errorf("cannot validate options: %w", err)
 			}
@@ -58,7 +60,9 @@ func NewCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("error instantiating zap logger: %w", err)
 			}
+
 			logf.SetLogger(log)
+			klog.SetLogger(log)
 
 			log.Info("Starting application", "app", AppName, "version", version.Get())
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
@@ -75,7 +79,7 @@ func NewCommand() *cobra.Command {
 
 	flags := cmd.Flags()
 	opt.addFlags(flags)
-	verflag.AddFlags(flags)
+	flags.AddGoFlagSet(goflag.CommandLine)
 
 	return cmd
 }
@@ -90,6 +94,7 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 	utilruntime.Must(kubernetes.AddGardenSchemeToScheme(scheme))
 	utilruntime.Must(authenticationv1alpha1.AddToScheme(scheme))
 
+	log.Info("Setting up manager")
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Logger: log.WithName("manager"),
 		Scheme: scheme,
@@ -97,10 +102,19 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 			BindAddress: "0",
 		},
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
-		// TODO(theoddora): Consider enabling the support for leader election + source/target clusters
-		LeaderElection:         false,
+
+		LeaderElection:                *conf.LeaderElection.LeaderElect,
+		LeaderElectionResourceLock:    conf.LeaderElection.ResourceLock,
+		LeaderElectionID:              conf.LeaderElection.ResourceName,
+		LeaderElectionNamespace:       conf.LeaderElection.ResourceNamespace,
+		LeaderElectionReleaseOnCancel: true,
+		LeaseDuration:                 &conf.LeaderElection.LeaseDuration.Duration,
+		RenewDeadline:                 &conf.LeaderElection.RenewDeadline.Duration,
+		RetryPeriod:                   &conf.LeaderElection.RetryPeriod.Duration,
+
 		PprofBindAddress:       "",
-		HealthProbeBindAddress: net.JoinHostPort("", "8081"),
+		HealthProbeBindAddress: net.JoinHostPort("", strconv.Itoa(conf.Server.HealthPort)),
+
 		Controller: controllerconfig.Controller{
 			RecoverPanic: ptr.To(true),
 		},
@@ -109,6 +123,7 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 		return fmt.Errorf("unable to create manager: %w", err)
 	}
 
+	log.Info("Setting up health check endpoints")
 	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
 		return err
 	}
@@ -133,5 +148,6 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 		return fmt.Errorf("unable to create garbage collector controller: %w", err)
 	}
 
+	log.Info("Starting manager")
 	return mgr.Start(ctx)
 }

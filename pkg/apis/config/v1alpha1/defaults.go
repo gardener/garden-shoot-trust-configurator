@@ -10,6 +10,7 @@ import (
 	"github.com/gardener/gardener/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -23,6 +24,9 @@ func SetDefaults_GardenShootTrustConfiguratorConfiguration(obj *GardenShootTrust
 	}
 	if obj.LogFormat == "" {
 		obj.LogFormat = logger.FormatJSON
+	}
+	if obj.LeaderElection == nil {
+		obj.LeaderElection = &componentbaseconfigv1alpha1.LeaderElectionConfiguration{}
 	}
 }
 
@@ -53,5 +57,28 @@ func SetDefaults_OIDCConfig(obj *OIDCConfig) {
 	}
 	if obj.MaxTokenExpiration == nil {
 		obj.MaxTokenExpiration = &metav1.Duration{Duration: DefaultMaxTokenExpiration}
+	}
+}
+
+// SetDefaults_ServerConfiguration sets defaults for the ServerConfiguration object.
+func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
+	if obj.HealthPort == 0 {
+		obj.HealthPort = 8081
+	}
+}
+
+// SetDefaults_LeaderElectionConfiguration sets defaults for the LeaderElectionConfiguration object.
+func SetDefaults_LeaderElectionConfiguration(obj *componentbaseconfigv1alpha1.LeaderElectionConfiguration) {
+	if obj.ResourceLock == "" {
+		obj.ResourceLock = "leases"
+	}
+
+	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(obj)
+
+	if obj.ResourceNamespace == "" {
+		obj.ResourceNamespace = DefaultLockObjectNamespace
+	}
+	if obj.ResourceName == "" {
+		obj.ResourceName = DefaultLockObjectName
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/gardener/gardener/pkg/logger"
+	validationutils "github.com/gardener/gardener/pkg/utils/validation"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -31,6 +33,8 @@ func ValidateGardenShootTrustConfiguratorConfiguration(conf *v1alpha1.GardenShoo
 	}
 
 	allErrs = append(allErrs, validateControllers(&conf.Controllers, field.NewPath("controllers"))...)
+	allErrs = append(allErrs, validationutils.ValidateLeaderElectionConfiguration(conf.LeaderElection, field.NewPath("leaderElection"))...)
+	allErrs = append(allErrs, validateServerConfiguration(&conf.Server, field.NewPath("server"))...)
 
 	return allErrs
 }
@@ -60,5 +64,12 @@ func validateOIDCConfig(config *v1alpha1.OIDCConfig, fldPath *field.Path) field.
 		}
 	}
 
+	return allErrs
+}
+
+// validateServerConfiguration validates the server configuration.
+func validateServerConfiguration(config *v1alpha1.ServerConfiguration, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.HealthPort), fldPath.Child("healthPort"))...)
 	return allErrs
 }

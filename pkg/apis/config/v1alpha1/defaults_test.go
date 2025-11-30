@@ -12,6 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
+	"k8s.io/utils/ptr"
 
 	. "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
@@ -53,6 +55,14 @@ var _ = Describe("Defaults", func() {
 				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
 
 				Expect(obj.LogFormat).To(Equal("md"))
+			})
+		})
+
+		Context("LeaderElection", func() {
+			It("should initialize LeaderElection when nil", func() {
+				SetDefaults_GardenShootTrustConfiguratorConfiguration(obj)
+
+				Expect(obj.LeaderElection).NotTo(BeNil())
 			})
 		})
 	})
@@ -177,6 +187,78 @@ var _ = Describe("Defaults", func() {
 				SetDefaults_OIDCConfig(obj)
 
 				Expect(obj.MaxTokenExpiration).To(PointTo(Equal(metav1.Duration{Duration: 1 * time.Hour})))
+			})
+		})
+	})
+
+	Describe("#SetDefaults_ServerConfiguration", func() {
+		var obj *ServerConfiguration
+
+		BeforeEach(func() {
+			obj = &ServerConfiguration{}
+		})
+
+		Context("HealthPort", func() {
+			It("should default health port", func() {
+				SetDefaults_ServerConfiguration(obj)
+
+				Expect(obj.HealthPort).To(Equal(8081))
+			})
+
+			It("should not overwrite already set value for health port", func() {
+				obj.HealthPort = 9090
+
+				SetDefaults_ServerConfiguration(obj)
+
+				Expect(obj.HealthPort).To(Equal(9090))
+			})
+		})
+	})
+
+	Describe("#SetDefaults_LeaderElectionConfiguration", func() {
+		var obj *componentbaseconfigv1alpha1.LeaderElectionConfiguration
+
+		BeforeEach(func() {
+			obj = &componentbaseconfigv1alpha1.LeaderElectionConfiguration{}
+		})
+
+		Context("should default to recommended leader election values", func() {
+			It("should set default recommended leader election values", func() {
+				SetDefaults_LeaderElectionConfiguration(obj)
+
+				expectedLeaderElectionConfig := &componentbaseconfigv1alpha1.LeaderElectionConfiguration{
+					LeaderElect:       ptr.To(true),
+					LeaseDuration:     metav1.Duration{Duration: 15 * time.Second},
+					RenewDeadline:     metav1.Duration{Duration: 10 * time.Second},
+					RetryPeriod:       metav1.Duration{Duration: 2 * time.Second},
+					ResourceLock:      "leases",
+					ResourceName:      DefaultLockObjectName,
+					ResourceNamespace: DefaultLockObjectNamespace,
+				}
+				Expect(obj).To(Equal(expectedLeaderElectionConfig))
+			})
+
+			It("should not overwrite already set values for leader election", func() {
+				obj.LeaderElect = ptr.To(false)
+				obj.LeaseDuration = metav1.Duration{Duration: 30 * time.Second}
+				obj.RenewDeadline = metav1.Duration{Duration: 20 * time.Second}
+				obj.RetryPeriod = metav1.Duration{Duration: 5 * time.Second}
+				obj.ResourceLock = "lock"
+				obj.ResourceName = "name"
+				obj.ResourceNamespace = "namespace"
+
+				SetDefaults_LeaderElectionConfiguration(obj)
+
+				expectedLeaderElectionConfig := &componentbaseconfigv1alpha1.LeaderElectionConfiguration{
+					LeaderElect:       ptr.To(false),
+					LeaseDuration:     metav1.Duration{Duration: 30 * time.Second},
+					RenewDeadline:     metav1.Duration{Duration: 20 * time.Second},
+					RetryPeriod:       metav1.Duration{Duration: 5 * time.Second},
+					ResourceLock:      "lock",
+					ResourceName:      "name",
+					ResourceNamespace: "namespace",
+				}
+				Expect(obj).To(Equal(expectedLeaderElectionConfig))
 			})
 		})
 	})

@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+replicaCount: 1
+
+image:
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/garden-shoot-trust-configurator
+  pullPolicy: IfNotPresent
+  tag: latest
+
+projectedKubeconfig:
+  baseMountPath: /var/run/secrets/gardener.cloud
+  genericKubeconfigSecretName: generic-token-kubeconfig
+  tokenSecretName: garden-shoot-trust-configurator-access-token
+
+# Controller configuration values, passed as a config file
+config:
+  server:
+    healthPort: 8081
+  leaderElection:
+    leaderElect: true
+    leaseDuration: 15s
+    renewDeadline: 10s
+    retryPeriod: 2s
+    resourceLock: leases
+  logLevel: info
+  logFormat: json
+  controllers:
+    shoot:
+      syncPeriod: 1h
+      oidcConfig:
+        audiences:
+        - garden
+        maxTokenExpiration: 2h
+    garbageCollector: 
+      syncPeriod: 1h
+      minimumObjectLifetime: 10m
+
+additionalAnnotations:
+  service: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+priorityClassName: gardener-garden-system-400
+
+autoscaling:
+  enabled: false
+  # TODO(theoddora) Enable Vertical Pod Autoscaler
+  vpa: {}

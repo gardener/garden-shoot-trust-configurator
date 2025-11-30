@@ -25,9 +25,13 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_GardenShootTrustConfiguratorConfiguration(in *GardenShootTrustConfiguratorConfiguration) {
 	SetDefaults_GardenShootTrustConfiguratorConfiguration(in)
+	if in.LeaderElection != nil {
+		SetDefaults_LeaderElectionConfiguration(in.LeaderElection)
+	}
 	SetDefaults_ShootControllerConfig(&in.Controllers.Shoot)
 	if in.Controllers.Shoot.OIDCConfig != nil {
 		SetDefaults_OIDCConfig(in.Controllers.Shoot.OIDCConfig)
 	}
 	SetDefaults_GarbageCollectorControllerConfig(&in.Controllers.GarbageCollector)
+	SetDefaults_ServerConfiguration(&in.Server)
 }
