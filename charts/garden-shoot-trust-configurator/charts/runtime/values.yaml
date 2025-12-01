@@ -42,12 +42,15 @@ additionalAnnotations:
 
 resources:
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 64Mi
 
 priorityClassName: gardener-garden-system-400
 
-autoscaling:
-  enabled: false
-  # TODO(theoddora) Enable Vertical Pod Autoscaler
-  vpa: {}
+vpa:
+  enabled: true
+  resourcePolicy:
+    minAllowed:
+      memory: 64Mi
+  updatePolicy:
+    updateMode: "Recreate"
