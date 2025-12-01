@@ -50,7 +50,7 @@ runtime:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 64Mi
 
   priorityClassName: gardener-garden-system-400

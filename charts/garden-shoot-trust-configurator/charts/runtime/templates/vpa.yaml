@@ -6,13 +6,14 @@
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
-  name: {{ include "garden-shoot-trust-configurator.name" . }}-vpa
+  name: {{ include "garden-shoot-trust-configurator.name" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   {{- if .Values.vpa.resourcePolicy }}
   resourcePolicy:
     containerPolicies:
     - containerName: '*'
+      controlledValues: RequestsOnly
       minAllowed:
         memory: {{ required ".Values.vpa.resourcePolicy.minAllowed.memory is required" .Values.vpa.resourcePolicy.minAllowed.memory }}
   {{- end }}
