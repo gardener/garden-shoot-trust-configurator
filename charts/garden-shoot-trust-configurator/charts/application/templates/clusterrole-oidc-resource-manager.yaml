@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "garden-shoot-trust-configurator.name" . }}
+  labels:
+{{ include "labels" . | indent 4 }}
+rules:
+- apiGroups:
+  - authentication.gardener.cloud
+  resources:
+  - openidconnects
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - core.gardener.cloud
+  resources:
+  - shoots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch

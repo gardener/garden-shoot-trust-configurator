@@ -13,6 +13,8 @@ import (
 	gomegatypes "github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 	. "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1/validation"
@@ -33,6 +35,22 @@ var _ = Describe("#ValidateGardenShootTrustConfiguratorConfiguration", func() {
 						MaxTokenExpiration: &metav1.Duration{Duration: 2 * time.Hour},
 					},
 				},
+				GarbageCollector: v1alpha1.GarbageCollectorControllerConfig{
+					SyncPeriod:            &metav1.Duration{Duration: time.Hour},
+					MinimumObjectLifetime: &metav1.Duration{Duration: 10 * time.Minute},
+				},
+			},
+			Server: v1alpha1.ServerConfiguration{
+				HealthPort: 8080,
+			},
+			LeaderElection: &componentbaseconfigv1alpha1.LeaderElectionConfiguration{
+				LeaderElect:       ptr.To(true),
+				LeaseDuration:     metav1.Duration{Duration: 15 * time.Second},
+				RenewDeadline:     metav1.Duration{Duration: 10 * time.Second},
+				RetryPeriod:       metav1.Duration{Duration: 2 * time.Second},
+				ResourceLock:      "configmapsleases",
+				ResourceName:      "garden-shoot-trust-configurator-leader-election",
+				ResourceNamespace: "garden",
 			},
 		}
 	})
@@ -44,6 +62,13 @@ var _ = Describe("#ValidateGardenShootTrustConfiguratorConfiguration", func() {
 
 	It("should pass validation when OIDCConfig is nil", func() {
 		conf.Controllers.Shoot.OIDCConfig = nil
+
+		errorList := ValidateGardenShootTrustConfiguratorConfiguration(conf)
+		Expect(errorList).To(BeEmpty())
+	})
+
+	It("should pass validation when LeaderElectionConfiguration is nil", func() {
+		conf.LeaderElection = nil
 
 		errorList := ValidateGardenShootTrustConfiguratorConfiguration(conf)
 		Expect(errorList).To(BeEmpty())
