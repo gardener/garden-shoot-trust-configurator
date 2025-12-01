@@ -70,6 +70,19 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 15
             timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ required ".Values.config.server.healthPort is required" .Values.config.server.healthPort }}
+              scheme: HTTP
+            initialDelaySeconds: 3
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 5
           {{- if .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
