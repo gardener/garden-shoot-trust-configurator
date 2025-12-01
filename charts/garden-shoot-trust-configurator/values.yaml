@@ -9,7 +9,7 @@ application:
 # Runtime chart values for garden-shoot-trust-configurator that will deploy the controller in the Runtime Garden cluster.
 runtime:
   enabled: false
-  
+
   replicaCount: 1
 
   image:
@@ -55,7 +55,10 @@ runtime:
 
   priorityClassName: gardener-garden-system-400
   
-  autoscaling:
-    enabled: false
-    # TODO(theoddora) Enable Vertical Pod Autoscaler
-    vpa: {}
+  vpa:
+    enabled: true
+    resourcePolicy:
+      minAllowed:
+        memory: 64Mi
+    updatePolicy:
+      updateMode: "Recreate"
