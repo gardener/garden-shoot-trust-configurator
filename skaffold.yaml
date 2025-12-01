@@ -1,0 +1,32 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: garden-shoot-trust-configurator
+build:
+  artifacts:
+    - image: europe-docker.pkg.dev/gardener-project/public/gardener/garden-shoot-trust-configurator
+      ko:
+        dependencies:
+          paths:
+            - cmd/garden-shoot-trust-configurator
+            - cmd/garden-shoot-trust-configurator/app
+            - internal/reconciler/garbagecollector
+            - internal/reconciler/shoot
+            - pkg/apis/config/v1alpha1
+            - pkg/apis/config/v1alpha1/validation
+            - pkg/apis/constants
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/garden-shoot-trust-configurator
+deploy:
+  helm:
+    releases:
+      - name: garden-shoot-trust-configurator
+        chartPath: charts/garden-shoot-trust-configurator
+        valuesFiles:
+          - charts/garden-shoot-trust-configurator/values.yaml
+        namespace: garden
+        setValues:
+          application.enabled: true
+          runtime.enabled: true
