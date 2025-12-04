@@ -58,78 +58,11 @@ git checkout "$owa_version"
 # Generate certificates
 dev_owa_dir="$repo_root/dev/owa"
 cert_dir="$dev_owa_dir/certs"
-mkdir -p "$cert_dir"
 
-ca_key="$cert_dir/ca.key"
-ca_crt="$cert_dir/ca.crt"
-tls_key="$cert_dir/tls.key"
-tls_csr="$cert_dir/tls.csr"
-tls_crt="$cert_dir/tls.crt"
-
-if [[ ! -s "$ca_crt" || ! -s "$ca_key" ]]; then
-    echo "No CA found. Generating new CA key and certificate."
-
-    openssl genrsa -out "$ca_key" 3072
-
-    openssl req -x509 -new -nodes \
-        -key "$ca_key" \
-        -sha256 \
-        -days 3650 \
-        -out "$ca_crt" \
-        -subj "/CN=webhook-ca" \
-        -addext "basicConstraints=CA:TRUE" \
-        -addext "keyUsage=keyCertSign,cRLSign" \
-        -addext "subjectKeyIdentifier=hash"
-fi
-
-if [[ -s "$ca_key" && -s "$ca_crt" ]]; then
-    if openssl x509 -checkend 86400 -in "$ca_crt" >/dev/null 2>&1; then
-        echo "CA certificate is valid and will be reused."
-    else
-        echo "CA certificate has expired. Generating a new one."
-        openssl req -x509 -new -nodes \
-            -key "$ca_key" \
-            -sha256 \
-            -days 3650 \
-            -out "$ca_crt" \
-            -subj "/CN=webhook-ca" \
-            -addext "basicConstraints=CA:TRUE" \
-            -addext "keyUsage=keyCertSign,cRLSign" \
-            -addext "subjectKeyIdentifier=hash"
-    fi
-fi
-
-SANs="DNS:localhost,DNS:oidc-webhook-authenticator,DNS:oidc-webhook-authenticator.garden,DNS:oidc-webhook-authenticator.garden.svc,DNS:oidc-webhook-authenticator.garden.svc.cluster.local,IP:127.0.0.1"
-
-if [[ -s "$tls_key" && -s "$tls_crt" ]]; then
-  if openssl x509 -checkend 86400 -in "$tls_crt" >/dev/null 2>&1; then
-    echo "Development TLS certificate is valid and will be reused."
-    should_generate_cert=false
-  else
-    echo "Development TLS certificate has expired. Regenerating."
-    should_generate_cert=true
-  fi
-else
-  echo "No TLS cert found. Generating new one."
-  should_generate_cert=true
-fi
-
-if [[ "$should_generate_cert" == true ]]; then
-  openssl genrsa -out "$tls_key" 3072
-
-  openssl req -new -key "$tls_key" -out "$tls_csr" \
-    -subj "/CN=oidc-webhook-authenticator.garden.svc.cluster.local" \
-    -addext "subjectAltName=$SANs"
-
-  openssl x509 -req \
-    -in "$tls_csr" \
-    -CA "$ca_crt" -CAkey "$ca_key" \
-    -out "$tls_crt" -days 365 -sha256 \
-    -extfile <(printf "subjectAltName=%s" "$SANs")
-
-  rm -f "$tls_csr"
-  echo "Development TLS certificate generated successfully."
-fi
+"$repo_root"/hack/generate-certs.sh \
+  "$dev_owa_dir" \
+  "oidc-webhook-authenticator.garden.svc.cluster.local" \
+  "DNS:localhost,DNS:oidc-webhook-authenticator,DNS:oidc-webhook-authenticator.garden,DNS:oidc-webhook-authenticator.garden.svc,DNS:oidc-webhook-authenticator.garden.svc.cluster.local,IP:127.0.0.1"
 # Finish generating certificates
 
 charts_dir="$repo_root/dev/$OIDC_WEBHOOK_AUTH_NAME/charts/$OIDC_WEBHOOK_AUTH_NAME"

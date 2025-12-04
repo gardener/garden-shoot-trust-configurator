@@ -17,7 +17,12 @@ projectedKubeconfig:
 # Controller configuration values, passed as a config file
 config:
   server:
-    healthPort: 8081
+    healthProbes:
+      port: 8081
+    webhooks:
+      port: 10443
+      tls:
+        serverCertDir: /etc/garden-shoot-trust-configurator/tls
   leaderElection:
     leaderElect: true
     leaseDuration: 15s

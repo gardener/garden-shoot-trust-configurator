@@ -20,6 +20,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/time v0.14.0
+	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
 	k8s.io/component-base v0.34.1
@@ -185,7 +186,6 @@ require (
 	helm.sh/helm/v3 v3.19.1 // indirect
 	istio.io/api v1.27.3 // indirect
 	istio.io/client-go v1.27.2 // indirect
-	k8s.io/api v0.34.1 // indirect
 	k8s.io/apiextensions-apiserver v0.34.1 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.5.1 // indirect
 	k8s.io/code-generator v0.34.1 // indirect

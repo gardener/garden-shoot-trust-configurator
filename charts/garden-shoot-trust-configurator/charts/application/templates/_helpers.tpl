@@ -2,9 +2,8 @@
 garden-shoot-trust-configurator
 {{- end -}}
 
-# Warning: The following helper is duplicated in charts/runtime/templates/_helpers.tpl. Keep them in sync.
 {{- define "leaderelectionid" -}}
-garden-shoot-trust-configurator-leader-election
+{{ .Values.global.leaderElection.leaderElectionID }}
 {{- end -}}
 
 {{- define "labels.app.key" -}}

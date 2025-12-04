@@ -62,8 +62,29 @@ func SetDefaults_OIDCConfig(obj *OIDCConfig) {
 
 // SetDefaults_ServerConfiguration sets defaults for the ServerConfiguration object.
 func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
-	if obj.HealthPort == 0 {
-		obj.HealthPort = 8081
+	if obj.HealthProbes == nil {
+		obj.HealthProbes = &Server{}
+	}
+}
+
+// SetDefaults_Server sets defaults for the Server object.
+func SetDefaults_Server(obj *Server) {
+	if obj.Port == 0 {
+		obj.Port = 8081
+	}
+}
+
+// SetDefaults_HTTPSServer sets defaults for the HTTPSServer object.
+func SetDefaults_HTTPSServer(obj *HTTPSServer) {
+	if obj.Port == 0 {
+		obj.Port = 10443
+	}
+}
+
+// SetDefaults_TLSServer sets defaults for the TLSServer object.
+func SetDefaults_TLSServer(obj *TLSServer) {
+	if obj.ServerCertDir == "" {
+		obj.ServerCertDir = DefaultVolumeMountPathCertificates
 	}
 }
 
