@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "garden-shoot-trust-configurator.name" . }}
+  labels:
+{{ include "labels" . | indent 4 }}
+webhooks:
+- name: oidc.authentication.gardener.cloud
+  admissionReviewVersions: ["v1", "v1beta1"]
+  timeoutSeconds: 10
+  rules:
+  - apiGroups:
+    - "authentication.gardener.cloud"
+    apiVersions:
+    - v1alpha1
+    operations:
+    - UPDATE
+    resources:
+    - openidconnects
+  failurePolicy: Fail
+  objectSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: "garden-shoot-trust-configurator"
+  clientConfig:
+    url: {{ printf "https://%s.%s/webhooks/oidc" (include "garden-shoot-trust-configurator.name" .) (.Release.Namespace) }}
+    caBundle: {{ required ".Values.webhookConfig.tls.caBundle is required" (b64enc .Values.webhookConfig.tls.caBundle) }}
+  sideEffects: None

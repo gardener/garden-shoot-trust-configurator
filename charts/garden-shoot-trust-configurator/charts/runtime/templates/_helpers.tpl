@@ -22,9 +22,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
     {{- end -}}
 {{- end -}}
 
-# Warning: The following helper is duplicated in charts/application/templates/_helpers.tpl. Keep them in sync.
 {{- define "leaderelectionid" -}}
-garden-shoot-trust-configurator-leader-election
+{{ .Values.global.leaderElection.id }}
 {{- end -}}
 
 {{- define "garden-shoot-trust-configurator.config.data" -}}
@@ -52,7 +51,10 @@ controllers:
     syncPeriod: {{  .Values.config.controllers.garbageCollector.syncPeriod }}
     minimumObjectLifetime: {{  .Values.config.controllers.garbageCollector.minimumObjectLifetime }}
 server:
-  healthPort: {{ .Values.config.server.healthPort }}
+  webhooks:
+    port: {{ .Values.config.server.webhooks.port }}
+  healthProbes:
+    port: {{ .Values.config.server.healthProbes.port }}
 leaderElection:
   resourceName: {{ include "leaderelectionid" . }}
   resourceNamespace: kube-system

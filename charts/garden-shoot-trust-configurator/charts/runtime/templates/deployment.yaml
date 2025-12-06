@@ -21,6 +21,7 @@ spec:
   template:
     metadata:
       annotations:
+        checksum/secret-{{ include "garden-shoot-trust-configurator.config.name" . }}-tls: {{ include (print $.Template.BasePath "/secret-tls.yaml") . | sha256sum }}
         checksum/configmap-{{ include "garden-shoot-trust-configurator.config.name" . }}: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         networking.gardener.cloud/to-dns: allowed
@@ -61,12 +62,12 @@ spec:
           - --config=/etc/garden-shoot-trust-configurator/config/config.yaml
           ports:
             - name: health
-              containerPort: {{ .Values.config.server.healthPort }}
+              containerPort: {{ .Values.config.server.healthProbes.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
-              port: {{ required ".Values.config.server.healthPort is required" .Values.config.server.healthPort }}
+              port: {{ required ".Values.config.server.healthProbes.port is required" .Values.config.server.healthProbes.port }}
               scheme: HTTP
             initialDelaySeconds: 15
             timeoutSeconds: 5
@@ -76,7 +77,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /readyz
-              port: {{ required ".Values.config.server.healthPort is required" .Values.config.server.healthPort }}
+              port: {{ required ".Values.config.server.healthProbes.port is required" .Values.config.server.healthProbes.port }}
               scheme: HTTP
             initialDelaySeconds: 5
             timeoutSeconds: 5
@@ -90,6 +91,9 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           volumeMounts:
+            - name: garden-shoot-trust-configurator-tls
+              mountPath: /etc/garden-shoot-trust-configurator/webhooks/tls
+              readOnly: true
             - name: garden-shoot-trust-configurator-config
               mountPath: /etc/garden-shoot-trust-configurator/config
               readOnly: true
@@ -100,6 +104,9 @@ spec:
       - name: garden-shoot-trust-configurator-config
         configMap:
           name: {{ include "garden-shoot-trust-configurator.config.name" . }}
+      - name: garden-shoot-trust-configurator-tls
+        secret:
+          secretName: garden-shoot-trust-configurator-tls
       - name: kubeconfig
         projected:
           defaultMode: 420

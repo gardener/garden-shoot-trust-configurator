@@ -31,9 +31,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/garbagecollector"
 	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
+	oidcwebhook "github.com/gardener/garden-shoot-trust-configurator/internal/webhook/oidc"
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
@@ -112,12 +114,20 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 		RenewDeadline:                 &conf.LeaderElection.RenewDeadline.Duration,
 		RetryPeriod:                   &conf.LeaderElection.RetryPeriod.Duration,
 
-		PprofBindAddress:       "",
-		HealthProbeBindAddress: net.JoinHostPort("", strconv.Itoa(conf.Server.HealthPort)),
+		PprofBindAddress: "",
+		HealthProbeBindAddress: net.JoinHostPort(
+			conf.Server.HealthProbes.BindAddress,
+			strconv.Itoa(conf.Server.HealthProbes.Port)),
 
 		Controller: controllerconfig.Controller{
 			RecoverPanic: ptr.To(true),
 		},
+
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Host:    conf.Server.Webhooks.BindAddress,
+			Port:    conf.Server.Webhooks.Port,
+			CertDir: conf.Server.Webhooks.TLS.ServerCertDir,
+		}),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create manager: %w", err)
@@ -133,6 +143,9 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
 		return err
 	}
+	if err := mgr.AddReadyzCheck("webhook-server", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		return err
+	}
 
 	// Setup all Controllers
 	if err := (&shootcontroller.Reconciler{
@@ -146,6 +159,11 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 		Clock:  clock.RealClock{},
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create garbage collector controller: %w", err)
+	}
+
+	log.Info("Adding webhook handler to manager")
+	if err := oidcwebhook.AddToManager(mgr, log); err != nil {
+		return fmt.Errorf("failed adding webhook handler to manager: %w", err)
 	}
 
 	log.Info("Starting manager")

@@ -53,6 +53,20 @@ if [[ $generic_kubeconfig_secret_name == "" ]]; then
   fail "Generic Token Kubeconfig not found"
 fi
 
+# Generate certificates
+dev_trust_config_dir="$repo_root/dev/trust-configurator"
+cert_dir="$dev_trust_config_dir/certs"
+
+"$repo_root"/hack/generate-certs.sh \
+  "$repo_root/dev/trust-configurator" \
+  "garden-shoot-trust-configurator.garden.svc.cluster.local" \
+  "DNS:localhost,DNS:garden-shoot-trust-configurator,DNS:garden-shoot-trust-configurator.garden,DNS:garden-shoot-trust-configurator.garden.svc,DNS:garden-shoot-trust-configurator.garden.svc.cluster.local,IP:127.0.0.1"
+# Finish generating certificates
+
+yq -i ' .application.webhookConfig.tls.caBundle = load_str("'"$cert_dir/ca.crt"'") | (.application.webhookConfig.tls.caBundle style="literal") ' "$values_file" 
+yq -i ' .runtime.config.server.webhooks.tls.crt = load_str("'"$cert_dir/tls.crt"'") | (.runtime.config.server.webhooks.tls.crt style="literal") ' "$values_file" 
+yq -i ' .runtime.config.server.webhooks.tls.key = load_str("'"$cert_dir/tls.key"'") | (.runtime.config.server.webhooks.tls.key style="literal") ' "$values_file"
+
 # Virtual cluster installation
 echo "Patching Helm values: $values_file"
 

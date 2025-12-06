@@ -41,7 +41,17 @@ var _ = Describe("#ValidateGardenShootTrustConfiguratorConfiguration", func() {
 				},
 			},
 			Server: v1alpha1.ServerConfiguration{
-				HealthPort: 8080,
+				Webhooks: v1alpha1.HTTPSServer{
+					Server: v1alpha1.Server{
+						Port: 10443,
+					},
+					TLS: v1alpha1.TLS{
+						ServerCertDir: "/etc/garden-shoot-trust-configurator/webhooks/tls",
+					},
+				},
+				HealthProbes: &v1alpha1.Server{
+					Port: 8081,
+				},
 			},
 			LeaderElection: &componentbaseconfigv1alpha1.LeaderElectionConfiguration{
 				LeaderElect:       ptr.To(true),
@@ -118,4 +128,42 @@ var _ = Describe("#ValidateGardenShootTrustConfiguratorConfiguration", func() {
 			)),
 		),
 	)
+
+	Describe("ServerConfiguration", func() {
+		It("should forbid negative HealthProbes port", func() {
+			conf.Server.HealthProbes.Port = -1
+
+			errs := ValidateGardenShootTrustConfiguratorConfiguration(conf)
+			Expect(errs).To(ConsistOf(PointTo(
+				MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("server.healthProbes.port"),
+				}),
+			)))
+		})
+
+		It("should forbid negative Webhooks port", func() {
+			conf.Server.Webhooks.Port = -1
+
+			errs := ValidateGardenShootTrustConfiguratorConfiguration(conf)
+			Expect(errs).To(ConsistOf(PointTo(
+				MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("server.webhooks.port"),
+				}),
+			)))
+		})
+
+		It("should forbid empty Webhooks TLS ServerCertDir", func() {
+			conf.Server.Webhooks.TLS.ServerCertDir = ""
+
+			errs := ValidateGardenShootTrustConfiguratorConfiguration(conf)
+			Expect(errs).To(ConsistOf(PointTo(
+				MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeRequired),
+					"Field": Equal("server.webhooks.tls.serverCertDir"),
+				}),
+			)))
+		})
+	})
 })
