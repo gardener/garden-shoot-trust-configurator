@@ -45,8 +45,8 @@ var _ = Describe("#ValidateGardenShootTrustConfiguratorConfiguration", func() {
 					Server: v1alpha1.Server{
 						Port: 10443,
 					},
-					TLS: v1alpha1.TLSServer{
-						ServerCertDir: "/etc/garden-shoot-trust-configurator/tls",
+					TLS: v1alpha1.TLS{
+						ServerCertDir: "/etc/garden-shoot-trust-configurator/webhooks/tls",
 					},
 				},
 				HealthProbes: &v1alpha1.Server{

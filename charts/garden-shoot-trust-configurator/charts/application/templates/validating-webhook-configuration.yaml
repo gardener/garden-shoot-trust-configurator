@@ -18,14 +18,14 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
-    - DELETE
     resources:
     - openidconnects
   failurePolicy: Fail
-  objectSelector: {}
+  objectSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: "garden-shoot-trust-configurator"
   clientConfig:
     url: {{ printf "https://%s.%s/webhooks/oidc" (include "garden-shoot-trust-configurator.name" .) (.Release.Namespace) }}
-    caBundle: {{ required ".Values.global.webhooks.tls.caBundle is required" (b64enc .Values.global.webhooks.tls.caBundle) }}
+    caBundle: {{ required ".Values.webhookConfig.tls.caBundle is required" (b64enc .Values.webhookConfig.tls.caBundle) }}
   sideEffects: None

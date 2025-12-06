@@ -63,9 +63,9 @@ cert_dir="$dev_trust_config_dir/certs"
   "DNS:localhost,DNS:garden-shoot-trust-configurator,DNS:garden-shoot-trust-configurator.garden,DNS:garden-shoot-trust-configurator.garden.svc,DNS:garden-shoot-trust-configurator.garden.svc.cluster.local,IP:127.0.0.1"
 # Finish generating certificates
 
-yq -i ' .global.webhooks.tls.caBundle = load_str("'"$cert_dir/ca.crt"'") | (.application.webhookConfig.caBundle style="literal") ' "$values_file" 
-yq -i ' .global.webhooks.tls.crt = load_str("'"$cert_dir/tls.crt"'") | (.application.webhookConfig.crt style="literal") ' "$values_file" 
-yq -i ' .global.webhooks.tls.key = load_str("'"$cert_dir/tls.key"'") | (.application.webhookConfig.key style="literal") ' "$values_file"
+yq -i ' .application.webhookConfig.tls.caBundle = load_str("'"$cert_dir/ca.crt"'") | (.application.webhookConfig.tls.caBundle style="literal") ' "$values_file" 
+yq -i ' .runtime.config.server.webhooks.tls.crt = load_str("'"$cert_dir/tls.crt"'") | (.runtime.config.server.webhooks.tls.crt style="literal") ' "$values_file" 
+yq -i ' .runtime.config.server.webhooks.tls.key = load_str("'"$cert_dir/tls.key"'") | (.runtime.config.server.webhooks.tls.key style="literal") ' "$values_file"
 
 # Virtual cluster installation
 echo "Patching Helm values: $values_file"

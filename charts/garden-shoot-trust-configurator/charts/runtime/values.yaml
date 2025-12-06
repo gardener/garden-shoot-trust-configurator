@@ -21,8 +21,17 @@ config:
       port: 8081
     webhooks:
       port: 10443
+      # These must be signed by the same CA that is provided in the application chart
+      # under application.webhooks.tls.caBundle.
       tls:
-        serverCertDir: /etc/garden-shoot-trust-configurator/tls
+        crt: |
+          -----BEGIN CERTIFICATE-----
+          ...
+          -----END CERTIFICATE-----
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          ...
+          -----END PRIVATE KEY-----
   leaderElection:
     leaderElect: true
     leaseDuration: 15s

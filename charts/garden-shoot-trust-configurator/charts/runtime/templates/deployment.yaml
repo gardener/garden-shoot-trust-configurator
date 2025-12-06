@@ -92,7 +92,7 @@ spec:
             allowPrivilegeEscalation: false
           volumeMounts:
             - name: garden-shoot-trust-configurator-tls
-              mountPath: {{ required ".Values.config.server.webhooks.tls.serverCertDir is required" .Values.config.server.webhooks.tls.serverCertDir }}
+              mountPath: /etc/garden-shoot-trust-configurator/webhooks/tls
               readOnly: true
             - name: garden-shoot-trust-configurator-config
               mountPath: /etc/garden-shoot-trust-configurator/config

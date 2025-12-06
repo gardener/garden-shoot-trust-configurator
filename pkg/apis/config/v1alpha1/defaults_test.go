@@ -255,16 +255,16 @@ var _ = Describe("Defaults", func() {
 		})
 	})
 
-	Describe("#SetDefaults_TLSServer", func() {
-		var obj *TLSServer
+	Describe("#SetDefaults_TLS", func() {
+		var obj *TLS
 
 		BeforeEach(func() {
-			obj = &TLSServer{}
+			obj = &TLS{}
 		})
 
 		Context("ServerCertDir", func() {
 			It("should default server cert dir", func() {
-				SetDefaults_TLSServer(obj)
+				SetDefaults_TLS(obj)
 
 				Expect(obj.ServerCertDir).To(Equal(DefaultVolumeMountPathCertificates))
 			})
@@ -272,7 +272,7 @@ var _ = Describe("Defaults", func() {
 			It("should not overwrite already set value for server cert dir", func() {
 				obj.ServerCertDir = "/custom/dir"
 
-				SetDefaults_TLSServer(obj)
+				SetDefaults_TLS(obj)
 
 				Expect(obj.ServerCertDir).To(Equal("/custom/dir"))
 			})

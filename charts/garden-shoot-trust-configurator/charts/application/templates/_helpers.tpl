@@ -3,7 +3,7 @@ garden-shoot-trust-configurator
 {{- end -}}
 
 {{- define "leaderelectionid" -}}
-{{ .Values.global.leaderElection.leaderElectionID }}
+{{ .Values.global.leaderElection.id }}
 {{- end -}}
 
 {{- define "labels.app.key" -}}

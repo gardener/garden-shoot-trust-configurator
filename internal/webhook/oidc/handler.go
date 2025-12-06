@@ -34,24 +34,28 @@ func (h *Handler) Handle(_ context.Context, req admission.Request) admission.Res
 		"username", req.UserInfo.Username,
 	)
 
-	if req.Operation == admissionv1.Update {
-		oldObj := &authenticationv1alpha1.OpenIDConnect{}
-		if err := h.Decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-
-		newObj := &authenticationv1alpha1.OpenIDConnect{}
-		if err := h.Decoder.DecodeRaw(req.Object, newObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-
-		if oldObj.Labels[constants.LabelManagedByKey] == constants.LabelManagedByValue {
-			for k, v := range oldObj.Labels {
-				if newV, ok := newObj.Labels[k]; !ok || newV != v {
-					return admission.Denied(fmt.Sprintf("removing or changing label %q from managed OpenIDConnect is not allowed", k))
-				}
-			}
-		}
+	if req.Operation != admissionv1.Update {
+		return admission.Allowed("")
 	}
+
+	oldObj := &authenticationv1alpha1.OpenIDConnect{}
+	if err := h.Decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	// If the old object is not managed, allow the update
+	if oldObj.Labels[constants.LabelManagedByKey] != constants.LabelManagedByValue {
+		return admission.Allowed("")
+	}
+
+	newObj := &authenticationv1alpha1.OpenIDConnect{}
+	if err := h.Decoder.DecodeRaw(req.Object, newObj); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if newObj.Labels[constants.LabelManagedByKey] != constants.LabelManagedByValue {
+		return admission.Denied(fmt.Sprintf("removing or changing label %q for managed OpenIDConnect is not allowed", constants.LabelManagedByKey))
+	}
+
 	return admission.Allowed("")
 }

@@ -124,7 +124,7 @@ var _ = Describe("handler", func() {
 
 			response := handler.Handle(ctx, request)
 			Expect(response.Allowed).To(BeFalse())
-			Expect(response.Result.Message).To(ContainSubstring(`removing or changing label "app.kubernetes.io/managed-by" from managed OpenIDConnect is not allowed`))
+			Expect(response.Result.Message).To(ContainSubstring(`removing or changing label "app.kubernetes.io/managed-by" for managed OpenIDConnect is not allowed`))
 		})
 
 		It("should deny update that changes a managed label", func() {
@@ -154,7 +154,7 @@ var _ = Describe("handler", func() {
 
 			response := handler.Handle(ctx, request)
 			Expect(response.Allowed).To(BeFalse())
-			Expect(response.Result.Message).To(ContainSubstring(`removing or changing label "app.kubernetes.io/managed-by" from managed OpenIDConnect is not allowed`))
+			Expect(response.Result.Message).To(ContainSubstring(`removing or changing label "app.kubernetes.io/managed-by" for managed OpenIDConnect is not allowed`))
 		})
 
 		It("should allow update of an unmanaged OIDC resource", func() {
@@ -192,6 +192,33 @@ var _ = Describe("handler", func() {
 					Labels: map[string]string{
 						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
 						"env":                          "prod",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			request.Object.Raw = objData
+
+			Expect(handler.Handle(ctx, request)).To(Equal(responseAllowed))
+		})
+
+		It("should allow update of labels when OIDC is managed", func() {
+			objData, err := runtime.Encode(encoder, &authenticationv1alpha1.OpenIDConnect{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-oidc",
+					Labels: map[string]string{
+						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			request.OldObject.Raw = objData
+
+			objData, err = runtime.Encode(encoder, &authenticationv1alpha1.OpenIDConnect{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-oidc",
+					Labels: map[string]string{
+						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+						"env":                          "staging",
 					},
 				},
 			})

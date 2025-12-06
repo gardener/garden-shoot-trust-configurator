@@ -2,27 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Global values for the garden-shoot-trust-configurator chart.
+# These values are shared between the application and runtime sub-charts.
 global:
   leaderElection:
-    leaderElectionID: garden-shoot-trust-configurator-leader-election
-  webhooks:
+    id: garden-shoot-trust-configurator-leader-election
+
+# Application chart values for garden-shoot-trust-configurator that will create the RBAC in the Virtual Garden cluster.
+# It also creates the ValidatingWebhookConfiguration that points to the webhook server in the Runtime Garden cluster.
+application:
+  enabled: false
+
+  # TLS Configuration of the ValidatingWebhookConfiguration. The CA bundle is used to verify the webhook server certificate.
+  # The CA bundle should be the CA that signed the webhook server certificate used in the runtime cluster
+  # (see runtime.config.server.webhooks.tls.crt and runtime.config.server.webhooks.tls.key).
+  webhookConfig:
     tls:
       caBundle: |
         -----BEGIN CERTIFICATE-----
         ...
         -----END CERTIFICATE-----
-      crt: |
-        -----BEGIN CERTIFICATE-----
-        ...
-        -----END CERTIFICATE-----
-      key: |
-        -----BEGIN PRIVATE KEY-----
-        ...
-        -----END PRIVATE KEY-----
-
-# Application chart values for garden-shoot-trust-configurator that will create the needed RBAC in the Virtual Garden cluster.
-application:
-  enabled: false
 
 # Runtime chart values for garden-shoot-trust-configurator that will deploy the controller in the Runtime Garden cluster.
 runtime:
@@ -47,8 +46,17 @@ runtime:
         port: 8081
       webhooks:
         port: 10443
+        # These must be signed by the same CA that is provided in the application chart
+        # under application.webhookConfig.tls.caBundle.
         tls:
-          serverCertDir: /etc/garden-shoot-trust-configurator/tls
+          crt: |
+            -----BEGIN CERTIFICATE-----
+            ...
+            -----END CERTIFICATE-----
+          key: |
+            -----BEGIN PRIVATE KEY-----
+            ...
+            -----END PRIVATE KEY-----
     leaderElection:
       leaderElect: true
       leaseDuration: 15s

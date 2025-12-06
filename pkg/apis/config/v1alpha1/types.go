@@ -21,7 +21,7 @@ const (
 	// DefaultLockObjectName is the default lock name for leader election.
 	DefaultLockObjectName = "garden-shoot-trust-configurator-leader-election"
 	// DefaultVolumeMountPathCertificates is the default directory for the webhook server TLS certificate and key.
-	DefaultVolumeMountPathCertificates = "/etc/garden-shoot-trust-configurator/tls"
+	DefaultVolumeMountPathCertificates = "/etc/garden-shoot-trust-configurator/webhooks/tls"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -106,12 +106,12 @@ type HTTPSServer struct {
 	// Server is the configuration for the bind address and the port.
 	Server `json:",inline"`
 
-	// TLSServer contains information about the TLS configuration for a HTTPS server.
-	TLS TLSServer `json:"tls"`
+	// TLS contains information about the TLS configuration for a HTTPS server.
+	TLS TLS `json:"tls"`
 }
 
-// TLSServer contains information about the TLS configuration for a HTTPS server.
-type TLSServer struct {
+// TLS contains information about the TLS configuration for a HTTPS server.
+type TLS struct {
 	// ServerCertDir is the path to a directory containing the server's TLS certificate and key (the files must be
 	// named tls.crt and tls.key respectively).
 	ServerCertDir string `json:"serverCertDir"`

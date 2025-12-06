@@ -23,7 +23,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "leaderelectionid" -}}
-{{ .Values.global.leaderElection.leaderElectionID }}
+{{ .Values.global.leaderElection.id }}
 {{- end -}}
 
 {{- define "garden-shoot-trust-configurator.config.data" -}}
@@ -53,8 +53,6 @@ controllers:
 server:
   webhooks:
     port: {{ .Values.config.server.webhooks.port }}
-    tls:
-      serverCertDir: {{ .Values.config.server.webhooks.tls.serverCertDir }}
   healthProbes:
     port: {{ .Values.config.server.healthProbes.port }}
 leaderElection:
