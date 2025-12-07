@@ -70,6 +70,12 @@ func validateOIDCConfig(config *v1alpha1.OIDCConfig, fldPath *field.Path) field.
 // validateServerConfiguration validates the server configuration.
 func validateServerConfiguration(config *v1alpha1.ServerConfiguration, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.HealthPort), fldPath.Child("healthPort"))...)
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.HealthProbes.Port), fldPath.Child("healthProbes", "port"))...)
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.Webhooks.Port), fldPath.Child("webhooks", "port"))...)
+
+	if config.Webhooks.TLS.ServerCertDir == "" {
+		allErrs = append(allErrs, field.Required(fldPath.Child("webhooks", "tls", "serverCertDir"), "server certificate directory is required"))
+	}
+
 	return allErrs
 }

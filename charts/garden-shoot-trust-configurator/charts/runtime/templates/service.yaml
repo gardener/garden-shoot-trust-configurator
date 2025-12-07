@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "garden-shoot-trust-configurator.name" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"protocol":"TCP","port":{{ required ".Values.config.server.webhooks.port is required" .Values.config.server.webhooks.port }}}]'
+  labels:
+{{ include "labels" . | indent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+{{ include "labels" . | indent 4 }}
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: {{ required ".Values.config.server.webhooks.port is required" .Values.config.server.webhooks.port }}

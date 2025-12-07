@@ -27,4 +27,7 @@ kind: GardenShootTrustConfiguratorConfiguration
 #   resourceName: garden-shoot-trust-configurator-leader-election
 #   resourceNamespace: kube-system
 # server:
-#   healthPort: 8081
+#   healthProbes:
+#     port: 8081
+#   webhooks:
+#     port: 10443

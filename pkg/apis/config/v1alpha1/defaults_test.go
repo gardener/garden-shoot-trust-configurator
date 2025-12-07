@@ -198,19 +198,83 @@ var _ = Describe("Defaults", func() {
 			obj = &ServerConfiguration{}
 		})
 
-		Context("HealthPort", func() {
-			It("should default health port", func() {
+		Context("HealthProbes", func() {
+			It("should default HealthProbes when nil", func() {
 				SetDefaults_ServerConfiguration(obj)
 
-				Expect(obj.HealthPort).To(Equal(8081))
+				Expect(obj.HealthProbes).NotTo(BeNil())
+			})
+		})
+	})
+
+	Describe("#SetDefaults_Server", func() {
+		var obj *Server
+
+		BeforeEach(func() {
+			obj = &Server{}
+		})
+
+		Context("Port", func() {
+			It("should default port", func() {
+				SetDefaults_Server(obj)
+
+				Expect(obj.Port).To(Equal(8081))
 			})
 
-			It("should not overwrite already set value for health port", func() {
-				obj.HealthPort = 9090
+			It("should not overwrite already set value for port", func() {
+				obj.Port = 9090
 
-				SetDefaults_ServerConfiguration(obj)
+				SetDefaults_Server(obj)
 
-				Expect(obj.HealthPort).To(Equal(9090))
+				Expect(obj.Port).To(Equal(9090))
+			})
+		})
+	})
+
+	Describe("#SetDefaults_HTTPSServer", func() {
+		var obj *HTTPSServer
+
+		BeforeEach(func() {
+			obj = &HTTPSServer{}
+		})
+
+		Context("Port", func() {
+			It("should default port", func() {
+				SetDefaults_HTTPSServer(obj)
+
+				Expect(obj.Port).To(Equal(10443))
+			})
+
+			It("should not overwrite already set value for port", func() {
+				obj.Port = 9090
+
+				SetDefaults_HTTPSServer(obj)
+
+				Expect(obj.Port).To(Equal(9090))
+			})
+		})
+	})
+
+	Describe("#SetDefaults_TLS", func() {
+		var obj *TLS
+
+		BeforeEach(func() {
+			obj = &TLS{}
+		})
+
+		Context("ServerCertDir", func() {
+			It("should default server cert dir", func() {
+				SetDefaults_TLS(obj)
+
+				Expect(obj.ServerCertDir).To(Equal(DefaultVolumeMountPathCertificates))
+			})
+
+			It("should not overwrite already set value for server cert dir", func() {
+				obj.ServerCertDir = "/custom/dir"
+
+				SetDefaults_TLS(obj)
+
+				Expect(obj.ServerCertDir).To(Equal("/custom/dir"))
 			})
 		})
 	})

@@ -20,6 +20,8 @@ const (
 	DefaultLockObjectNamespace = "kube-system"
 	// DefaultLockObjectName is the default lock name for leader election.
 	DefaultLockObjectName = "garden-shoot-trust-configurator-leader-election"
+	// DefaultVolumeMountPathCertificates is the default directory for the webhook server TLS certificate and key.
+	DefaultVolumeMountPathCertificates = "/etc/garden-shoot-trust-configurator/webhooks/tls"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -84,7 +86,33 @@ type OIDCConfig struct {
 
 // ServerConfiguration contains details for the HTTP(S) servers.
 type ServerConfiguration struct {
-	// HealthPort is the configuration serving the healthz endpoint.
+	// Webhooks is the configuration for the HTTPS webhook server.
+	Webhooks HTTPSServer `json:"webhooks"`
+	// HealthProbes is the configuration for serving the healthz and readyz endpoints.
 	// +optional
-	HealthPort int `json:"healthPort,omitempty"`
+	HealthProbes *Server `json:"healthProbes,omitempty"`
+}
+
+// Server contains information for HTTP(S) server configuration.
+type Server struct {
+	// Port is the port on which to serve requests.
+	Port int `json:"port"`
+	// BindAddress is the IP address on which to listen for the specified port.
+	BindAddress string `json:"bindAddress"`
+}
+
+// HTTPSServer is the configuration for the HTTPSServer server.
+type HTTPSServer struct {
+	// Server is the configuration for the bind address and the port.
+	Server `json:",inline"`
+
+	// TLS contains information about the TLS configuration for a HTTPS server.
+	TLS TLS `json:"tls"`
+}
+
+// TLS contains information about the TLS configuration for a HTTPS server.
+type TLS struct {
+	// ServerCertDir is the path to a directory containing the server's TLS certificate and key (the files must be
+	// named tls.crt and tls.key respectively).
+	ServerCertDir string `json:"serverCertDir"`
 }

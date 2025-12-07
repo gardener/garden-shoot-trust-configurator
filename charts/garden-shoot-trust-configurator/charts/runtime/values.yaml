@@ -17,7 +17,21 @@ projectedKubeconfig:
 # Controller configuration values, passed as a config file
 config:
   server:
-    healthPort: 8081
+    healthProbes:
+      port: 8081
+    webhooks:
+      port: 10443
+      # These must be signed by the same CA that is provided in the application chart
+      # under application.webhooks.tls.caBundle.
+      tls:
+        crt: |
+          -----BEGIN CERTIFICATE-----
+          ...
+          -----END CERTIFICATE-----
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          ...
+          -----END PRIVATE KEY-----
   leaderElection:
     leaderElect: true
     leaseDuration: 15s
