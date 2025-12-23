@@ -19,7 +19,7 @@ ARG EFFECTIVE_VERSION
 RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
 
 ############# garden-shoot-trust-configurator
-FROM gcr.io/distroless/static-debian12:nonroot AS garden-shoot-trust-configurator
+FROM gcr.io/distroless/static-debian13:nonroot AS garden-shoot-trust-configurator
 WORKDIR /
 
 COPY --from=builder /go/bin/garden-shoot-trust-configurator /garden-shoot-trust-configurator
