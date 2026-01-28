@@ -1,0 +1,52 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: operator
+build:
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
+  tagPolicy:
+    customTemplate:
+      template: "{{.version}}-{{.sha}}"
+      components:
+        - name: version
+          envTemplate:
+            template: "{{.VERSION}}"
+        - name: sha
+          inputDigest: {}
+  artifacts:
+    - image: local-skaffold/garden-shoot-trust-configurator
+      ko:
+        dependencies:
+          paths:
+            - cmd/garden-shoot-trust-configurator
+            - cmd/garden-shoot-trust-configurator/app
+            - internal/reconciler/garbagecollector
+            - internal/reconciler/shoot
+            - internal/webhook/oidc
+            - pkg/apis/config/v1alpha1
+            - pkg/apis/config/v1alpha1/validation
+            - pkg/apis/constants
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/garden-shoot-trust-configurator
+deploy:
+  helm:
+    hooks:
+      before:
+        - host:
+            command:
+              - ./hack/create-tls-secret.sh
+    releases:
+      - name: garden-shoot-trust-configurator
+        chartPath: charts/garden-shoot-trust-configurator
+        valuesFiles:
+          - charts/garden-shoot-trust-configurator/values.yaml
+        namespace: garden
+        setValueTemplates:
+          image.repository: '{{.IMAGE_REPO_local_skaffold_garden_shoot_trust_configurator}}'
+          image.tag: '{{.IMAGE_TAG_local_skaffold_garden_shoot_trust_configurator}}@{{.IMAGE_DIGEST_local_skaffold_garden_shoot_trust_configurator}}'
+        setValues:
+          application.enabled: true
+          runtime.enabled: true
