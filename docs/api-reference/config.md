@@ -119,7 +119,9 @@ Kubernetes meta/v1.Duration
 <td>
 <code>leaderElection</code></br>
 <em>
+<a href="https://godoc.org/k8s.io/component-base/config/v1alpha1#LeaderElectionConfiguration">
 k8s.io/component-base/config/v1alpha1.LeaderElectionConfiguration
+</a>
 </em>
 </td>
 <td>
