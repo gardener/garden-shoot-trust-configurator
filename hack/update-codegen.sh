@@ -11,6 +11,8 @@ set -o pipefail
 CODE_GEN_DIR=$(go list -m -f '{{.Dir}}' k8s.io/code-generator)
 source "${CODE_GEN_DIR}/kube_codegen.sh"
 
+PROJECT_ROOT=$(dirname $0)/..
+
 kube::codegen::gen_helpers \
   --boilerplate "${GARDENER_HACK_DIR}/LICENSE_BOILERPLATE.txt" \
-  "${REPO_ROOT}/pkg/apis/config"
+  "${PROJECT_ROOT}/pkg/apis/config"
