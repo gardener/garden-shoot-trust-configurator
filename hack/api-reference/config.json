@@ -10,6 +10,10 @@
         {
             "typeMatchPrefix": "^k8s\\.io/(api|apimachinery/pkg/apis)/",
             "docsURLTemplate": "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.34/#{{lower .TypeIdentifier}}-{{arrIndex .PackageSegments -1}}-{{arrIndex .PackageSegments -2}}"
+        },
+        {
+            "typeMatchPrefix": "^k8s\\.io/component-base/config/v1alpha1",
+            "docsURLTemplate": "https://godoc.org/k8s.io/component-base/config/v1alpha1#{{.TypeIdentifier}}"
         }
     ],
     "typeDisplayNamePrefixOverrides": {
