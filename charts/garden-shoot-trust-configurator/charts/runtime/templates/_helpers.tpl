@@ -55,6 +55,11 @@ server:
     port: {{ .Values.config.server.webhooks.port }}
   healthProbes:
     port: {{ .Values.config.server.healthProbes.port }}
+  metrics:
+    {{- if .Values.config.server.metrics.bindAddress }}
+    bindAddress: {{ .Values.config.server.metrics.bindAddress }}
+    {{- end }}
+    port: {{ .Values.config.server.metrics.port }}
 leaderElection:
   resourceName: {{ include "leaderelectionid" . }}
   resourceNamespace: kube-system

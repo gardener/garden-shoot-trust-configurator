@@ -203,30 +203,34 @@ var _ = Describe("Defaults", func() {
 				SetDefaults_ServerConfiguration(obj)
 
 				Expect(obj.HealthProbes).NotTo(BeNil())
+				Expect(obj.HealthProbes.Port).To(Equal(8081))
 			})
 		})
-	})
 
-	Describe("#SetDefaults_Server", func() {
-		var obj *Server
+		Context("Metrics", func() {
+			It("should default Metrics when nil", func() {
+				SetDefaults_ServerConfiguration(obj)
 
-		BeforeEach(func() {
-			obj = &Server{}
+				Expect(obj.Metrics).NotTo(BeNil())
+				Expect(obj.Metrics.Port).To(Equal(8080))
+			})
 		})
 
-		Context("Port", func() {
-			It("should default port", func() {
-				SetDefaults_Server(obj)
+		Context("should not overwrite already set values", func() {
+			It("should not overwrite already set HealthProbes", func() {
+				obj.HealthProbes = &Server{Port: 9090}
 
-				Expect(obj.Port).To(Equal(8081))
+				SetDefaults_ServerConfiguration(obj)
+
+				Expect(obj.HealthProbes.Port).To(Equal(9090))
 			})
 
-			It("should not overwrite already set value for port", func() {
-				obj.Port = 9090
+			It("should not overwrite already set Metrics", func() {
+				obj.Metrics = &Server{Port: 9092}
 
-				SetDefaults_Server(obj)
+				SetDefaults_ServerConfiguration(obj)
 
-				Expect(obj.Port).To(Equal(9090))
+				Expect(obj.Metrics.Port).To(Equal(9092))
 			})
 		})
 	})

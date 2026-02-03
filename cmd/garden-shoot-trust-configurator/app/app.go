@@ -86,8 +86,8 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootTrustConfiguratorConfiguration) error {
-	cfg, err := ctrl.GetConfig()
+func run(ctx context.Context, log logr.Logger, cfg *configv1alpha1.GardenShootTrustConfiguratorConfiguration) error {
+	conf, err := ctrl.GetConfig()
 	if err != nil {
 		return err
 	}
@@ -97,36 +97,36 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 	utilruntime.Must(authenticationv1alpha1.AddToScheme(scheme))
 
 	log.Info("Setting up manager")
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+	mgr, err := ctrl.NewManager(conf, ctrl.Options{
 		Logger: log.WithName("manager"),
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
-			BindAddress: "0",
+			BindAddress: net.JoinHostPort(cfg.Server.Metrics.BindAddress, strconv.Itoa(cfg.Server.Metrics.Port)),
 		},
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
-		LeaderElection:                *conf.LeaderElection.LeaderElect,
-		LeaderElectionResourceLock:    conf.LeaderElection.ResourceLock,
-		LeaderElectionID:              conf.LeaderElection.ResourceName,
-		LeaderElectionNamespace:       conf.LeaderElection.ResourceNamespace,
+		LeaderElection:                *cfg.LeaderElection.LeaderElect,
+		LeaderElectionResourceLock:    cfg.LeaderElection.ResourceLock,
+		LeaderElectionID:              cfg.LeaderElection.ResourceName,
+		LeaderElectionNamespace:       cfg.LeaderElection.ResourceNamespace,
 		LeaderElectionReleaseOnCancel: true,
-		LeaseDuration:                 &conf.LeaderElection.LeaseDuration.Duration,
-		RenewDeadline:                 &conf.LeaderElection.RenewDeadline.Duration,
-		RetryPeriod:                   &conf.LeaderElection.RetryPeriod.Duration,
+		LeaseDuration:                 &cfg.LeaderElection.LeaseDuration.Duration,
+		RenewDeadline:                 &cfg.LeaderElection.RenewDeadline.Duration,
+		RetryPeriod:                   &cfg.LeaderElection.RetryPeriod.Duration,
 
 		PprofBindAddress: "",
 		HealthProbeBindAddress: net.JoinHostPort(
-			conf.Server.HealthProbes.BindAddress,
-			strconv.Itoa(conf.Server.HealthProbes.Port)),
+			cfg.Server.HealthProbes.BindAddress,
+			strconv.Itoa(cfg.Server.HealthProbes.Port)),
 
 		Controller: controllerconfig.Controller{
 			RecoverPanic: ptr.To(true),
 		},
 
 		WebhookServer: webhook.NewServer(webhook.Options{
-			Host:    conf.Server.Webhooks.BindAddress,
-			Port:    conf.Server.Webhooks.Port,
-			CertDir: conf.Server.Webhooks.TLS.ServerCertDir,
+			Host:    cfg.Server.Webhooks.BindAddress,
+			Port:    cfg.Server.Webhooks.Port,
+			CertDir: cfg.Server.Webhooks.TLS.ServerCertDir,
 		}),
 	})
 	if err != nil {
@@ -149,13 +149,13 @@ func run(ctx context.Context, log logr.Logger, conf *configv1alpha1.GardenShootT
 
 	// Setup all Controllers
 	if err := (&shootcontroller.Reconciler{
-		Config: conf.Controllers.Shoot,
+		Config: cfg.Controllers.Shoot,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create shoot reconcile controller: %w", err)
 	}
 
 	if err := (&garbagecollector.Reconciler{
-		Config: conf.Controllers.GarbageCollector,
+		Config: cfg.Controllers.GarbageCollector,
 		Clock:  clock.RealClock{},
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create garbage collector controller: %w", err)

@@ -29,5 +29,7 @@ kind: GardenShootTrustConfiguratorConfiguration
 # server:
 #   healthProbes:
 #     port: 8081
+#   metrics:
+#     port: 8080
 #   webhooks:
 #     port: 10443
