@@ -25,7 +25,3 @@ spec:
     port: 8080
     protocol: TCP
     targetPort: {{ required ".Values.config.server.metrics.port is required" .Values.config.server.metrics.port }}
-  - name: health
-    port: 8081
-    protocol: TCP
-    targetPort: {{ required ".Values.config.server.health.port is required" .Values.config.server.health.port }}
