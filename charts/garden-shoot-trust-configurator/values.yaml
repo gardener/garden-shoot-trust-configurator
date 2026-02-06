@@ -44,6 +44,8 @@ runtime:
     server:
       healthProbes:
         port: 8081
+      metrics:
+        port: 8080
       webhooks:
         port: 10443
         # These must be signed by the same CA that is provided in the application chart

@@ -361,6 +361,20 @@ Server
 <p>HealthProbes is the configuration for serving the healthz and readyz endpoints.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>metrics</code></br>
+<em>
+<a href="#config.trust-configurator.gardener.cloud/v1alpha1.Server">
+Server
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Metrics is the configuration for serving the metrics endpoint.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="config.trust-configurator.gardener.cloud/v1alpha1.ShootControllerConfig">ShootControllerConfig

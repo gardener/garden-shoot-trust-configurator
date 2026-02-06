@@ -65,12 +65,14 @@ func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
 	if obj.HealthProbes == nil {
 		obj.HealthProbes = &Server{}
 	}
-}
-
-// SetDefaults_Server sets defaults for the Server object.
-func SetDefaults_Server(obj *Server) {
-	if obj.Port == 0 {
-		obj.Port = 8081
+	if obj.HealthProbes.Port == 0 {
+		obj.HealthProbes.Port = 8081
+	}
+	if obj.Metrics == nil {
+		obj.Metrics = &Server{}
+	}
+	if obj.Metrics.Port == 0 {
+		obj.Metrics.Port = 8080
 	}
 }
 

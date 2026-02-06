@@ -91,6 +91,9 @@ type ServerConfiguration struct {
 	// HealthProbes is the configuration for serving the healthz and readyz endpoints.
 	// +optional
 	HealthProbes *Server `json:"healthProbes,omitempty"`
+	// Metrics is the configuration for serving the metrics endpoint.
+	// +optional
+	Metrics *Server `json:"metrics,omitempty"`
 }
 
 // Server contains information for HTTP(S) server configuration.

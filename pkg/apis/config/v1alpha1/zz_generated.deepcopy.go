@@ -160,6 +160,11 @@ func (in *ServerConfiguration) DeepCopyInto(out *ServerConfiguration) {
 		*out = new(Server)
 		**out = **in
 	}
+	if in.Metrics != nil {
+		in, out := &in.Metrics, &out.Metrics
+		*out = new(Server)
+		**out = **in
+	}
 	return
 }
 
