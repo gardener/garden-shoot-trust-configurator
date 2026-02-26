@@ -12,7 +12,7 @@ tool (
 )
 
 require (
-	github.com/gardener/gardener v1.136.2
+	github.com/gardener/gardener v1.136.3
 	github.com/gardener/oidc-webhook-authenticator v0.40.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.28.1
@@ -73,7 +73,7 @@ require (
 	github.com/fluent/fluent-operator/v3 v3.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gardener/etcd-druid/api v0.35.0 // indirect
+	github.com/gardener/etcd-druid/api v0.35.1 // indirect
 	github.com/gardener/machine-controller-manager v0.61.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
