@@ -12,6 +12,7 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 GOARCH                      ?= $(shell go env GOARCH)
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
+SRC_DIRS                    := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -99,10 +100,20 @@ test-clean:
 	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: verify
-verify: check format test sast
+verify: check-generate check check-go-fix format test sast
 
 .PHONY: verify-extended
-verify-extended: check-generate check format test test-cov test-clean sast-report
+verify-extended: verify test-cov test-clean sast-report
+
+.PHONY: check-go-fix
+check-go-fix: tidy
+	@echo "Running go fix..."
+	@go fix $(SRC_DIRS)/...
+	@if [ -n "$$(git status --porcelain $(SRC_DIRS))" ]; then \
+		echo "Error: go fix produced changes. Please run 'go fix ./...' and commit the changes."; \
+		git --no-pager diff; \
+		exit 1; \
+	fi
 
 # TODO(theoddora): re-enable when adding skaffold based local dev setup
 # # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
