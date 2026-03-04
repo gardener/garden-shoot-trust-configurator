@@ -162,8 +162,8 @@ github.com/gardener/gardener/pkg/apis v1.137.0 h1:YK7OFoJ6lY4s4+Uoh0VWr/eJVo94S5
 github.com/gardener/gardener/pkg/apis v1.137.0/go.mod h1:QUINW0KPDxMiYQ5bAmIKnsK3oWpseuqMrHnLrMEC5W4=
 github.com/gardener/machine-controller-manager v0.61.2 h1:kG8DgmOqqlljWqxa4x0ER4+L5zg1lxNd1dQXT9gKbvA=
 github.com/gardener/machine-controller-manager v0.61.2/go.mod h1:8eE1qLztrWIbOM71mHSQGaC6Q+pl5lvOyN08qP39D7o=
-github.com/gardener/oidc-webhook-authenticator v0.40.0 h1:Q3QyAlu5uBvYukOq7MeRxfl/KW2HHN2mdOxon4Eegck=
-github.com/gardener/oidc-webhook-authenticator v0.40.0/go.mod h1:T/0CAT25jo9KbF7+6HwVdyzrtjY8gdbfPBh/etYmmxY=
+github.com/gardener/oidc-webhook-authenticator v0.42.0 h1:kd0Mgpt+Z8QKObJ8t47xNwvAsgs62mkHJpJ28Zo9dU8=
+github.com/gardener/oidc-webhook-authenticator v0.42.0/go.mod h1:lScDzLgWwvo6k7fMtTQEFD2Ukf6+9y7abjVXO7EZD0g=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gkampitakis/ciinfo v0.3.2 h1:JcuOPk8ZU7nZQjdUhctuhQofk7BGHuIy0c9Ez8BNhXs=
 github.com/gkampitakis/ciinfo v0.3.2/go.mod h1:1NIwaOcFChN4fa/B0hEBdAb6npDlFL8Bwx4dfRLRqAo=
