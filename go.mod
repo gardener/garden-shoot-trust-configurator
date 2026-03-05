@@ -12,7 +12,7 @@ tool (
 )
 
 require (
-	github.com/gardener/gardener v1.137.2
+	github.com/gardener/gardener v1.137.3
 	github.com/gardener/gardener/pkg/apis v1.137.0
 	github.com/gardener/oidc-webhook-authenticator v0.42.0
 	github.com/go-logr/logr v1.4.3
