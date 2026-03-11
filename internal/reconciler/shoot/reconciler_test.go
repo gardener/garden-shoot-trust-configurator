@@ -312,6 +312,25 @@ var _ = Describe("Reconciler", func() {
 		Expect(res).To(Equal(ctrl.Result{}))
 	})
 
+	It("should result in error when an unmanaged OIDC resource already uses the same issuer", func() {
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "manually-created-oidc",
+			},
+			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+				IssuerURL: "https://shoot/issuer",
+			},
+		}
+		Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("already registered"))
+		Expect(res).To(Equal(ctrl.Result{}))
+	})
+
 	It("should not consider the shoot's own OIDC resource as a duplicate", func() {
 		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 

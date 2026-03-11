@@ -84,7 +84,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("shoot does not have service-account-issuer in its status.advertisedAddresses: %s", shoot.Status.AdvertisedAddresses)
 	}
 
-	// Validate that the issuer is not already registered by another managed OIDC resource.
+	// Validate that the issuer is not already registered by another OIDC resource.
 	if err := r.validateNoDuplicateIssuer(ctx, log, shoot, issuerURL); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -164,9 +164,7 @@ func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, sh
 
 func (r *Reconciler) validateNoDuplicateIssuer(ctx context.Context, log logr.Logger, shoot *gardencorev1beta1.Shoot, issuerURL string) error {
 	oidcList := &authenticationv1alpha1.OpenIDConnectList{}
-	if err := r.Client.List(ctx, oidcList, client.MatchingLabels{
-		constants.LabelManagedByKey: constants.LabelManagedByValue,
-	}); err != nil {
+	if err := r.Client.List(ctx, oidcList); err != nil {
 		return fmt.Errorf("failed to list OIDC resources for duplicate issuer check: %w", err)
 	}
 
