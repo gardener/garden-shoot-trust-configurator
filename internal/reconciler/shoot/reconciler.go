@@ -174,7 +174,6 @@ func (r *Reconciler) validateNoDuplicateIssuer(ctx context.Context, log logr.Log
 			continue
 		}
 		if existing.Spec.IssuerURL == issuerURL {
-			log.Info("Duplicate issuer detected — another OIDC resource already registers this issuer", "issuerURL", issuerURL, "existingOIDC", existing.Name)
 			return fmt.Errorf("issuer %q is already registered by OIDC resource %q", issuerURL, existing.Name)
 		}
 	}
