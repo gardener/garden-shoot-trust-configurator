@@ -7,6 +7,7 @@ package reconciler_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -28,6 +29,7 @@ import (
 
 	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
+	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/constants"
 )
 
 var _ = Describe("Reconciler", func() {
@@ -91,7 +93,7 @@ var _ = Describe("Reconciler", func() {
 
 		oidc = &authenticationv1alpha1.OpenIDConnect{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s--%s--%s", shoot.Namespace, shoot.Name, shoot.UID),
+				Name: getOIDCResourceName(shoot),
 			},
 		}
 		oidcObjectKey = client.ObjectKey{Name: oidc.Name}
@@ -287,4 +289,71 @@ var _ = Describe("Reconciler", func() {
 		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
 		Expect(oidcList.Items).To(BeEmpty())
 	})
+
+	It("should result in error when another managed OIDC resource already uses the same issuer", func() {
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "other-ns--other-shoot--other-uid",
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+				},
+			},
+			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+				IssuerURL: "https://shoot/issuer",
+			},
+		}
+		Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("already registered"))
+		Expect(res).To(Equal(ctrl.Result{}))
+	})
+
+	It("should result in error when an unmanaged OIDC resource already uses the same issuer", func() {
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "manually-created-oidc",
+			},
+			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+				IssuerURL: "https://shoot/issuer",
+			},
+		}
+		Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("already registered"))
+		Expect(res).To(Equal(ctrl.Result{}))
+	})
+
+	It("should not consider the shoot's own OIDC resource as a duplicate", func() {
+		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+		existingOIDC := &authenticationv1alpha1.OpenIDConnect{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: getOIDCResourceName(shoot),
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+				},
+			},
+			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+				IssuerURL: "https://shoot/issuer",
+			},
+		}
+		Expect(fakeClient.Create(ctx, existingOIDC)).To(Succeed())
+
+		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+	})
 })
+
+// The expected format is "<namespace>--<name>--<uid>".
+func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
+	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
+}

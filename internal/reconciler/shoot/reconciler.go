@@ -84,8 +84,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("shoot does not have service-account-issuer in its status.advertisedAddresses: %s", shoot.Status.AdvertisedAddresses)
 	}
 
-	// TODO(theoddora): Add proper validation that a single issuer is not registered more than once
-	// This should check if another OIDC resource with the same issuerURL already exists
+	// Validate that the issuer is not already registered by another OIDC resource.
+	if err := r.validateNoDuplicateIssuer(ctx, shoot, issuerURL); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	var (
 		userNameClaim             = "sub"
@@ -157,6 +159,24 @@ func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, sh
 		return fmt.Errorf("failed to delete OIDC: %w", err)
 	}
 	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)
+	return nil
+}
+
+func (r *Reconciler) validateNoDuplicateIssuer(ctx context.Context, shoot *gardencorev1beta1.Shoot, issuerURL string) error {
+	oidcList := &authenticationv1alpha1.OpenIDConnectList{}
+	if err := r.Client.List(ctx, oidcList); err != nil {
+		return fmt.Errorf("failed to list OIDC resources for duplicate issuer check: %w", err)
+	}
+
+	expectedName := getOIDCResourceName(shoot)
+	for _, existing := range oidcList.Items {
+		if existing.Name == expectedName {
+			continue
+		}
+		if existing.Spec.IssuerURL == issuerURL {
+			return fmt.Errorf("issuer %q is already registered by OIDC resource %q", issuerURL, existing.Name)
+		}
+	}
 	return nil
 }
 
