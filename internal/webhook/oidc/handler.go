@@ -27,13 +27,6 @@ type Handler struct {
 // Handle handles an admission request for an OIDC resource and restricts updates to labels
 // if the resource is managed by the Garden Shoot Trust Configurator.
 func (h *Handler) Handle(_ context.Context, req admission.Request) admission.Response {
-	h.Logger.Info("OIDC Handler invoked",
-		"operation", req.Operation,
-		"resource", req.Resource.Resource,
-		"name", req.Name,
-		"username", req.UserInfo.Username,
-	)
-
 	if req.Operation != admissionv1.Update {
 		return admission.Allowed("")
 	}
