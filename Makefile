@@ -24,6 +24,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 start:
 	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go --config=./example/00-config.yaml
 
+#################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
 
@@ -46,6 +47,7 @@ tidy:
 
 .PHONY: clean
 clean:
+	@rm -f $(REPO_ROOT)/gosec-report.sarif
 	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./internal/... ./pkg/...
 
 .PHONY: check-generate
@@ -59,11 +61,6 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 	@bash $(GARDENER_HACK_DIR)/check-typos.sh
 	@bash $(GARDENER_HACK_DIR)/check-file-names.sh
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
-# 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
-
-# .PHONY: update-skaffold-deps
-# update-skaffold-deps: $(YQ)
-# 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh update
 
 tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(GEN_CRD_API_REFERENCE_DOCS)
 	@go mod download
@@ -104,18 +101,22 @@ verify: check format test sast
 .PHONY: verify-extended
 verify-extended: check-generate check format test test-cov test-clean sast-report
 
-# TODO(theoddora): re-enable when adding skaffold based local dev setup
-# # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-# server-up server-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=server-local
+##############################################################
+# Rules related to kind and skaffold based local development #
+##############################################################
 
-# server-up: $(SKAFFOLD) $(KIND) $(HELM)
-# 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
+export SKAFFOLD_BUILD_CONCURRENCY = 0
+server-up server-down: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
+server-up server-down: export SKAFFOLD_PUSH = true
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+server-up server-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=server-local
 
-# server-dev: $(SKAFFOLD) $(HELM)
-# 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+server-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(SKAFFOLD) run
 
-# server-down: $(SKAFFOLD) $(HELM)
-# 	$(SKAFFOLD) delete
+server-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete
 
+## CI E2E Tests
 ci-e2e-kind:
 	./hack/ci-e2e-kind.sh
