@@ -9,9 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/logger"
 	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -19,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	logzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/gardener/garden-shoot-trust-configurator/internal/webhook/oidc"
@@ -30,7 +27,6 @@ var _ = Describe("handler", func() {
 		ctx = context.TODO()
 
 		decoder admission.Decoder
-		log     logr.Logger
 		handler admission.Handler
 		request admission.Request
 		encoder runtime.Encoder
@@ -51,11 +47,9 @@ var _ = Describe("handler", func() {
 		Expect(authenticationv1.AddToScheme(scheme)).To(Succeed())
 
 		ctx = context.TODO()
-		log = logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, logzap.WriteTo(GinkgoWriter))
 
 		decoder = admission.NewDecoder(scheme)
 		handler = &oidc.Handler{
-			Logger:  log,
 			Decoder: decoder,
 		}
 

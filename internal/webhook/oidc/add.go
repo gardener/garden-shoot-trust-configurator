@@ -24,7 +24,6 @@ func AddToManager(mgr manager.Manager, logger logr.Logger) error {
 
 	webhook := &admission.Webhook{
 		Handler: &Handler{
-			Logger:  logger,
 			Decoder: admission.NewDecoder(mgr.GetScheme()),
 		},
 		RecoverPanic: ptr.To(true),
