@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
-	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -20,20 +19,12 @@ import (
 // Handler is an admission webhook handler that restricts updates to certain fields
 // of managed OpenIDConnect resources.
 type Handler struct {
-	Logger  logr.Logger
 	Decoder admission.Decoder
 }
 
 // Handle handles an admission request for an OIDC resource and restricts updates to labels
 // if the resource is managed by the Garden Shoot Trust Configurator.
 func (h *Handler) Handle(_ context.Context, req admission.Request) admission.Response {
-	h.Logger.Info("OIDC Handler invoked",
-		"operation", req.Operation,
-		"resource", req.Resource.Resource,
-		"name", req.Name,
-		"username", req.UserInfo.Username,
-	)
-
 	if req.Operation != admissionv1.Update {
 		return admission.Allowed("")
 	}
