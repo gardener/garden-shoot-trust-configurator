@@ -20,8 +20,6 @@ const (
 	DefaultLockObjectNamespace = "kube-system"
 	// DefaultLockObjectName is the default lock name for leader election.
 	DefaultLockObjectName = "garden-shoot-trust-configurator-leader-election"
-	// DefaultVolumeMountPathCertificates is the default directory for the webhook server TLS certificate and key.
-	DefaultVolumeMountPathCertificates = "/etc/garden-shoot-trust-configurator/webhooks/tls"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
