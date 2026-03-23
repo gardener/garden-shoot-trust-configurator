@@ -81,7 +81,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if issuerURL == "" {
-		return ctrl.Result{}, fmt.Errorf("shoot does not have service-account-issuer in its status.advertisedAddresses: %s", shoot.Status.AdvertisedAddresses)
+		return ctrl.Result{}, fmt.Errorf("shoot does not have 'service-account-issuer' in its status.advertisedAddresses")
 	}
 
 	// Validate that the issuer is not already registered by another OIDC resource.
