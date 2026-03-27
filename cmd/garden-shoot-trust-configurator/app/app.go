@@ -6,7 +6,6 @@ package app
 
 import (
 	"context"
-	goflag "flag"
 	"fmt"
 	"net"
 	"strconv"
@@ -21,6 +20,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
@@ -71,7 +71,7 @@ func NewCommand() *cobra.Command {
 				log.Info("Flag", "name", flag.Name, "value", flag.Value, "default", flag.DefValue)
 			})
 
-			return run(cmd.Context(), log, opt.config)
+			return run(cmd.Context(), log, opt.config, opt.kubeconfig)
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
@@ -81,15 +81,14 @@ func NewCommand() *cobra.Command {
 
 	flags := cmd.Flags()
 	opt.addFlags(flags)
-	flags.AddGoFlagSet(goflag.CommandLine)
 
 	return cmd
 }
 
-func run(ctx context.Context, log logr.Logger, cfg *configv1alpha1.GardenShootTrustConfiguratorConfiguration) error {
-	conf, err := ctrl.GetConfig()
+func run(ctx context.Context, log logr.Logger, cfg *configv1alpha1.GardenShootTrustConfiguratorConfiguration, kubeconfigPath string) error {
+	targetClusterConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load target cluster config: %w", err)
 	}
 
 	scheme := runtime.NewScheme()
@@ -97,7 +96,7 @@ func run(ctx context.Context, log logr.Logger, cfg *configv1alpha1.GardenShootTr
 	utilruntime.Must(authenticationv1alpha1.AddToScheme(scheme))
 
 	log.Info("Setting up manager")
-	mgr, err := ctrl.NewManager(conf, ctrl.Options{
+	mgr, err := ctrl.NewManager(targetClusterConfig, ctrl.Options{
 		Logger: log.WithName("manager"),
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
