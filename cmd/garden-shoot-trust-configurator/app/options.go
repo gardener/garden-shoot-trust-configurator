@@ -27,6 +27,7 @@ func init() {
 
 type options struct {
 	configFile string
+	kubeconfig string
 	config     *configv1alpha1.GardenShootTrustConfiguratorConfiguration
 }
 
@@ -38,10 +39,15 @@ func newOptions() *options {
 // addFlags binds the command options to a given flagset.
 func (o *options) addFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&o.configFile, "config", o.configFile, "Path to configuration file.")
+	flags.StringVar(&o.kubeconfig, "kubeconfig", o.kubeconfig, "Path to a kubeconfig to the target cluster where OIDC resources are managed for trusted shoots.")
 }
 
 // Complete adapts from the command line args to the data required.
 func (o *options) Complete() error {
+	if len(o.kubeconfig) == 0 {
+		return fmt.Errorf("must provide a path to the target cluster kubeconfig")
+	}
+
 	if len(o.configFile) == 0 {
 		return fmt.Errorf("missing config file")
 	}

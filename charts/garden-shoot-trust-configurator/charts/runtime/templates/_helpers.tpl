@@ -53,6 +53,8 @@ controllers:
 server:
   webhooks:
     port: {{ .Values.config.server.webhooks.port }}
+    tls:
+      serverCertDir: /etc/garden-shoot-trust-configurator/webhooks/tls
   healthProbes:
     port: {{ .Values.config.server.healthProbes.port }}
   metrics:
