@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: garden-shoot-trust-configurator-application
+deploy:
+  helm:
+    hooks:
+      before:
+        - host:
+            command:
+              - bash
+              - -c
+              - >-
+                ./hack/generate-certs.sh dev/trust-configurator garden-shoot-trust-configurator.garden.svc DNS:localhost,DNS:garden-shoot-trust-configurator,DNS:garden-shoot-trust-configurator.garden,DNS:garden-shoot-trust-configurator.garden.svc,DNS:garden-shoot-trust-configurator.garden.svc.cluster.local,IP:127.0.0.1
+    releases:
+      - name: garden-shoot-trust-configurator-application
+        chartPath: charts/garden-shoot-trust-configurator
+        skipBuildDependencies: true
+        valuesFiles:
+          - charts/garden-shoot-trust-configurator/values.yaml
+        # The namespace for RBAC of leader election and the service account is hardcoded in the chart to be kube-system
+        # We need the garden namespace for the ValidatingWebhookConfiguration to point to the garden namespace in the runtime cluster
+        namespace: garden
+        setValues:
+          application.enabled: true
+          runtime.enabled: false
+        createNamespace: false
+        wait: true
+        setFiles:
+          application.webhookConfig.tls.caBundle: dev/trust-configurator/certs/ca.crt
+---
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: garden-shoot-trust-configurator
+build:
+  insecureRegistries:
+    - registry.local.gardener.cloud:5001
+  tagPolicy:
+    customTemplate:
+      template: "{{.version}}-{{.sha}}"
+      components:
+        - name: version
+          envTemplate:
+            template: "{{.VERSION}}"
+        - name: sha
+          gitCommit:
+            variant: AbbrevCommitSha
+  artifacts:
+    - image: local-skaffold/garden-shoot-trust-configurator
+      ko:
+        dependencies:
+          paths:
+            - cmd/garden-shoot-trust-configurator
+            - cmd/garden-shoot-trust-configurator/app
+            - internal/reconciler/garbagecollector
+            - internal/reconciler/shoot
+            - internal/webhook/oidc
+            - pkg/apis/config/v1alpha1
+            - pkg/apis/config/v1alpha1/validation
+            - pkg/apis/constants
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/garden-shoot-trust-configurator
+deploy:
+  helm:
+    releases:
+      - name: garden-shoot-trust-configurator
+        chartPath: charts/garden-shoot-trust-configurator
+        skipBuildDependencies: true
+        valuesFiles:
+          - charts/garden-shoot-trust-configurator/values.yaml
+        namespace: garden
+        createNamespace: false
+        wait: true
+        setValues:
+          application.enabled: false
+          runtime.enabled: true
+        setValueTemplates:
+          runtime.image.repository: '{{.IMAGE_REPO_local_skaffold_garden_shoot_trust_configurator}}'
+          runtime.image.tag: '{{.IMAGE_TAG_local_skaffold_garden_shoot_trust_configurator}}@{{.IMAGE_DIGEST_local_skaffold_garden_shoot_trust_configurator}}'
+          runtime.projectedKubeconfig.genericKubeconfigSecretName: '{{cmd "bash" "-c" "kubectl -n garden get secret -o=custom-columns=name:.metadata.name --no-headers | grep generic-token-kubeconfig | head -1"}}'
+          runtime.projectedKubeconfig.baseMountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+        setFiles:
+          runtime.config.server.webhooks.tls.crt: dev/trust-configurator/certs/tls.crt
+          runtime.config.server.webhooks.tls.key: dev/trust-configurator/certs/tls.key

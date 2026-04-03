@@ -9,19 +9,28 @@ Enable shoot clusters with [`Managed Service Account Issuer`](https://gardener.c
 ## Development
 As a prerequisite you need to have a Garden cluster up and running. Follow the [Gardener's local setup guide](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator) which explains how to set up Gardener.
 
-For local development, make sure to install `oidc-webhook-authenticator`, [more details are outlined here](docs/getting-started-locally.md).
-
-Once the Garden cluster is up and running, set the `KUBECONFIG` environment variable to interact with the Garden cluster.
+Once the `Garden` cluster is up and running locally, we expect to have two KUBECONFIGs for:
+- Virtual Garden cluster
+- Runtime Garden cluster
 
 ```bash
-gardener_repo_path=$(pwd)/../gardener # change this if needed
+GARDENER_REPO_ROOT=$(pwd)/../gardener # change this if needed
 
-export KUBECONFIG=$gardener_repo_path/dev-setup/kubeconfigs/virtual-garden/kubeconfig
+export KUBECONFIG_VIRTUAL=$GARDENER_REPO_ROOT/dev-setup/kubeconfigs/virtual-garden/kubeconfig
+export KUBECONFIG_RUNTIME=$GARDENER_REPO_ROOT/dev-setup/kubeconfigs/runtime/kubeconfig
 ```
+
+For local development, make sure to install the dependency `oidc-webhook-authenticator`, [more details are outlined here](docs/getting-started-locally.md).
 
 Now start the `garden-shoot-trust-configurator`
 ```bash
 make start
+```
+
+Alternatively you can deploy the trust-configurator in the local cluster with the following command.
+
+```bash
+make server-up
 ```
 
 ## Feedback and Support

@@ -1,8 +1,7 @@
 # Getting Started Locally
 
 ## Local KinD Setup with Gardener Operator and OIDC Webhook Authenticator Installed
-This document will walk you through running a Gardener KinD cluster on your local machine, installing oidc-webhook-authenticator ([**OWA**](https://github.com/gardener/oidc-webhook-authenticator)) in it and running the garden-shoot-trust-configurator.
-TODO(theoddora): Later it will contain the steps to install garden-shoot-trust-configurator.
+This document will walk you through running a Gardener KinD cluster on your local machine using the gardener-operator, installing oidc-webhook-authenticator ([**OWA**](https://github.com/gardener/oidc-webhook-authenticator)) in it and running the garden-shoot-trust-configurator.
 
 ## 1. Set Up Local Gardener Operator (`gardener/gardener`)
 
@@ -27,14 +26,21 @@ make operator-seed-up
 ```bash
 gardener_repo_path=$(pwd)/../gardener # change this if needed
 
-export VIRTUAL_KUBECONFIG=$gardener_repo_path/dev-setup/kubeconfigs/virtual-garden/kubeconfig
+export KUBECONFIG_VIRTUAL=$gardener_repo_path/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 
-export KIND_KUBECONFIG=$gardener_repo_path/example/gardener-local/kind/multi-zone/kubeconfig
+export KUBECONFIG_RUNTIME=$gardener_repo_path/example/gardener-local/kind/multi-zone/kubeconfig
 ```
 
 To install OWA resources in the locally set up garden cluster:
 ```bash
-./hack/kind-owa-up.sh --virtual-kubeconfig $VIRTUAL_KUBECONFIG --kind-kubeconfig $KIND_KUBECONFIG
+./hack/kind-owa-up.sh --kubeconfig-virtual $KUBECONFIG_VIRTUAL --kubeconfig-runtime $KUBECONFIG_RUNTIME
+```
+
+## 3. Install `garden-shoot-trust-configurator`
+
+Finally, you can start the garden-shoot-trust-configurator.
+```bash
+make start
 ```
 
 ## Troubleshooting

@@ -33,3 +33,5 @@ kind: GardenShootTrustConfiguratorConfiguration
 #     port: 8080
 #   webhooks:
 #     port: 10443
+#     tls:
+#       serverCertDir: /etc/garden-shoot-trust-configurator/webhooks/tls

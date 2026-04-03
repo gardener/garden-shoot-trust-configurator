@@ -7,17 +7,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VIRTUAL_KUBECONFIG=""
-KIND_KUBECONFIG=""
+KUBECONFIG_VIRTUAL=""
+KUBECONFIG_RUNTIME=""
 
 parse_flags() {
   while test $# -gt 0; do
     case "$1" in
-    --virtual-kubeconfig)
-      shift; VIRTUAL_KUBECONFIG="$1"
+    --kubeconfig-virtual)
+      shift; KUBECONFIG_VIRTUAL="$1"
       ;;
-    --kind-kubeconfig)
-      shift; KIND_KUBECONFIG="$1"
+    --kubeconfig-runtime)
+      shift; KUBECONFIG_RUNTIME="$1"
       ;;
     esac
 
@@ -27,8 +27,8 @@ parse_flags() {
 
 parse_flags "$@"
 
-if [[ -z "${VIRTUAL_KUBECONFIG:-}" || -z "${KIND_KUBECONFIG:-}" ]]; then
-  echo "Usage: $0 --virtual-kubeconfig <virtual-garden-kubeconfig> --kind-kubeconfig <kind-gardener-kubeconfig>"
+if [[ -z "${KUBECONFIG_VIRTUAL:-}" || -z "${KUBECONFIG_RUNTIME:-}" ]]; then
+  echo "Usage: $0 --kubeconfig-virtual <virtual-garden-kubeconfig> --kubeconfig-runtime <kind-gardener-kubeconfig>"
   exit 1
 fi
 
@@ -89,7 +89,7 @@ helm upgrade \
   --set application.virtualGarden.enabled="true" \
   --set runtime.enabled="false" \
   --namespace garden \
-  --kubeconfig "$VIRTUAL_KUBECONFIG" \
+  --kubeconfig "$KUBECONFIG_VIRTUAL" \
   oidc-webhook-authenticator \
   ./charts/oidc-webhook-authenticator 
 
@@ -97,9 +97,9 @@ echo "OIDC Webhook Authenticator installed successfully in the virtual cluster."
 
 echo "Generating kubeconfig for the OIDC Webhook Authenticator to access the hosting cluster."
 
-cluster_ca_data=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-cluster_server=$(kubectl config view --kubeconfig "$VIRTUAL_KUBECONFIG" --raw -o jsonpath='{.clusters[0].cluster.server}')
-token=$(kubectl -n garden create token oidc-webhook-authenticator --duration 48h --kubeconfig "$VIRTUAL_KUBECONFIG")
+cluster_ca_data=$(kubectl config view --kubeconfig "$KUBECONFIG_VIRTUAL" --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+cluster_server=$(kubectl config view --kubeconfig "$KUBECONFIG_VIRTUAL" --raw -o jsonpath='{.clusters[0].cluster.server}')
+token=$(kubectl -n garden create token oidc-webhook-authenticator --duration 48h --kubeconfig "$KUBECONFIG_VIRTUAL")
 
 tmpfile=$(mktemp)
 
@@ -169,13 +169,13 @@ helm upgrade \
   --set application.virtualGarden.enabled="false" \
   --set runtime.enabled="true" \
   --namespace garden \
-  --kubeconfig "$KIND_KUBECONFIG" \
+  --kubeconfig "$KUBECONFIG_RUNTIME" \
   oidc-webhook-authenticator \
   ./charts/oidc-webhook-authenticator 
 
 # Patch garden local to point to OWA
 kubectl patch garden local \
-  --kubeconfig "$KIND_KUBECONFIG" \
+  --kubeconfig "$KUBECONFIG_RUNTIME" \
   --type='merge' \
   -p '{
     "spec": {
