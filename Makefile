@@ -124,6 +124,7 @@ server-up server-down: export SKAFFOLD_PUSH = true
 server-up server-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=server-local
 
 server-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+# application chart only deploys webhook config/RBAC resources in the virtual garden (no Deployments), so skip status check, see https://skaffold.dev/docs/status-check/
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run -m garden-shoot-trust-configurator-application --kubeconfig=$(KUBECONFIG_VIRTUAL) --status-check=false
 	@VERSION=$(VERSION) LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run -m garden-shoot-trust-configurator --kubeconfig=$(KUBECONFIG_RUNTIME)
 

@@ -19,10 +19,11 @@ deploy:
     releases:
       - name: garden-shoot-trust-configurator-application
         chartPath: charts/garden-shoot-trust-configurator
+        # Skip building dependencies of the chart, as we only want to deploy the chart for the application component and not the runtime component
         skipBuildDependencies: true
         valuesFiles:
           - charts/garden-shoot-trust-configurator/values.yaml
-        # The namespace for RBAC of leader election and the service account is hardcoded in the chart to be kube-system
+        # The namespace for webhook config/RBAC is hardcoded in the chart to be kube-system
         # We need the garden namespace for the ValidatingWebhookConfiguration to point to the garden namespace in the runtime cluster
         namespace: garden
         setValues:
@@ -72,6 +73,7 @@ deploy:
     releases:
       - name: garden-shoot-trust-configurator
         chartPath: charts/garden-shoot-trust-configurator
+        # Skip building dependencies of the chart, as we only want to deploy the chart for the runtime component and not the application component
         skipBuildDependencies: true
         valuesFiles:
           - charts/garden-shoot-trust-configurator/values.yaml
