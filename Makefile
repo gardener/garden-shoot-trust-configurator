@@ -12,6 +12,9 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 GOARCH                      ?= $(shell go env GOARCH)
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
+GARDENER_REPO_ROOT          ?= $(realpath $(REPO_ROOT)/../gardener)
+KUBECONFIG_VIRTUAL          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
+KUBECONFIG_RUNTIME          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -22,8 +25,15 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: start
 start:
-	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go --config=./example/00-config.yaml
+	@bash $(HACK_DIR)/generate-certs.sh \
+		dev/trust-configurator \
+		garden-shoot-trust-configurator.garden.svc \
+		"DNS:localhost,DNS:garden-shoot-trust-configurator,DNS:garden-shoot-trust-configurator.garden,DNS:garden-shoot-trust-configurator.garden.svc,DNS:garden-shoot-trust-configurator.garden.svc.cluster.local,IP:127.0.0.1"
+	go run -ldflags $(LD_FLAGS) ./cmd/garden-shoot-trust-configurator/main.go \
+		--config=./example/local/00-config.yaml \
+		--kubeconfig=$(KUBECONFIG_VIRTUAL)
 
+#################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
 
@@ -59,11 +69,11 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 	@bash $(GARDENER_HACK_DIR)/check-typos.sh
 	@bash $(GARDENER_HACK_DIR)/check-file-names.sh
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
-# 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
 
-# .PHONY: update-skaffold-deps
-# update-skaffold-deps: $(YQ)
-# 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh update
+.PHONY: update-skaffold-deps
+update-skaffold-deps: $(YQ)
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh update
 
 tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(GEN_CRD_API_REFERENCE_DOCS)
 	@go mod download
@@ -104,18 +114,24 @@ verify: check format test sast
 .PHONY: verify-extended
 verify-extended: check-generate check format test test-cov test-clean sast-report
 
-# TODO(theoddora): re-enable when adding skaffold based local dev setup
-# # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-# server-up server-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=server-local
+##############################################################
+# Rules related to kind and skaffold based local development #
+##############################################################
 
-# server-up: $(SKAFFOLD) $(KIND) $(HELM)
-# 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
+server-up server-down: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5001
+server-up server-down: export SKAFFOLD_PUSH = true
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+server-up server-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=server-local
 
-# server-dev: $(SKAFFOLD) $(HELM)
-# 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+server-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+# application chart only deploys webhook config/RBAC resources in the virtual garden (no Deployments), so skip status check, see https://skaffold.dev/docs/status-check/
+	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run -m garden-shoot-trust-configurator-application --kubeconfig=$(KUBECONFIG_VIRTUAL) --status-check=false
+	@VERSION=$(VERSION) LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run -m garden-shoot-trust-configurator --kubeconfig=$(KUBECONFIG_RUNTIME)
 
-# server-down: $(SKAFFOLD) $(HELM)
-# 	$(SKAFFOLD) delete
+server-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete -m garden-shoot-trust-configurator --kubeconfig=$(KUBECONFIG_RUNTIME)
+	$(SKAFFOLD) delete -m garden-shoot-trust-configurator-application --kubeconfig=$(KUBECONFIG_VIRTUAL)
 
+## CI E2E Tests
 ci-e2e-kind:
 	./hack/ci-e2e-kind.sh
