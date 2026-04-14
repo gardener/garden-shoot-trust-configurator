@@ -6,7 +6,7 @@
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 
-//go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir $GARDENER_HACK_DIR/api-reference/template -out-file ../../../../docs/api-reference/config.md
+//go:generate crd-ref-docs --source-path=. --config=../../../../hack/api-reference/config.json --renderer=markdown --templates-dir=$GARDENER_HACK_DIR/api-reference/template --log-level=ERROR --output-path=../../../../docs/api-reference/config.md
 
 // Package v1alpha1 contains the shoot trust confogurator configuration.
 // +groupName=config.trust-configurator.gardener.cloud

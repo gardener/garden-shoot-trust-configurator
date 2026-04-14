@@ -66,7 +66,8 @@ check-generate:
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS) 
 	go vet ./...
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/... ./pkg/...
-	@bash $(GARDENER_HACK_DIR)/check-typos.sh
+	@echo "> Check Typos"
+	@$(TYPOS) --config=$(GARDENER_HACK_DIR)/../_typos.toml
 	@bash $(GARDENER_HACK_DIR)/check-file-names.sh
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
@@ -75,7 +76,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 update-skaffold-deps: $(YQ)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh update
 
-tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(GEN_CRD_API_REFERENCE_DOCS)
+tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(CRD_REF_DOCS)
 	@go mod download
 
 .PHONY: generate
