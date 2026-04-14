@@ -75,7 +75,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 update-skaffold-deps: $(YQ)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh update
 
-tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(GEN_CRD_API_REFERENCE_DOCS)
+tools-for-generate: $(CONTROLLER_GEN) $(YQ) $(MOCKGEN) $(HELM) $(CRD_REF_DOCS)
 	@go mod download
 
 .PHONY: generate

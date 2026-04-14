@@ -4,21 +4,24 @@
 <a href="#config.trust-configurator.gardener.cloud%2fv1alpha1">config.trust-configurator.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
+
 <h2 id="config.trust-configurator.gardener.cloud/v1alpha1">config.trust-configurator.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the shoot trust confogurator configuration.</p>
+
 </p>
-Resource Types:
-<ul></ul>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration
+
+<h3 id="controllerconfiguration">ControllerConfiguration
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.GardenShootTrustConfiguratorConfiguration">GardenShootTrustConfiguratorConfiguration</a>)
+(<em>Appears on:</em><a href="#gardenshoottrustconfiguratorconfiguration">GardenShootTrustConfiguratorConfiguration</a>)
 </p>
+
 <p>
-<p>ControllerConfiguration defines the configuration of the controllers.</p>
+ControllerConfiguration defines the configuration of the controllers.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -27,13 +30,12 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>shoot</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ShootControllerConfig">
-ShootControllerConfig
-</a>
+<a href="#shootcontrollerconfig">ShootControllerConfig</a>
 </em>
 </td>
 <td>
@@ -44,26 +46,30 @@ ShootControllerConfig
 <td>
 <code>garbageCollector</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.GarbageCollectorControllerConfig">
-GarbageCollectorControllerConfig
-</a>
+<a href="#garbagecollectorcontrollerconfig">GarbageCollectorControllerConfig</a>
 </em>
 </td>
 <td>
 <p>GarbageCollector is the configuration for the garbage-collector controller.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.GarbageCollectorControllerConfig">GarbageCollectorControllerConfig
+
+
+<h3 id="garbagecollectorcontrollerconfig">GarbageCollectorControllerConfig
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration</a>)
+(<em>Appears on:</em><a href="#controllerconfiguration">ControllerConfiguration</a>)
 </p>
+
 <p>
-<p>GarbageCollectorControllerConfig is the configuration for the garbage-collector controller.</p>
+GarbageCollectorControllerConfig is the configuration for the garbage-collector controller.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -72,13 +78,12 @@ GarbageCollectorControllerConfig
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>syncPeriod</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.34/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v/#duration-v1-meta">Duration</a>
 </em>
 </td>
 <td>
@@ -90,9 +95,7 @@ Kubernetes meta/v1.Duration
 <td>
 <code>minimumObjectLifetime</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.34/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v/#duration-v1-meta">Duration</a>
 </em>
 </td>
 <td>
@@ -100,13 +103,19 @@ Kubernetes meta/v1.Duration
 <p>MinimumObjectLifetime is the minimum age an object must have before it is considered for garbage collection.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.GardenShootTrustConfiguratorConfiguration">GardenShootTrustConfiguratorConfiguration
+
+
+<h3 id="gardenshoottrustconfiguratorconfiguration">GardenShootTrustConfiguratorConfiguration
 </h3>
+
+
 <p>
-<p>GardenShootTrustConfiguratorConfiguration defines the configuration for the Gardener garden-shoot-trust-configurator.</p>
+GardenShootTrustConfiguratorConfiguration defines the configuration for the Gardener garden-shoot-trust-configurator.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -115,13 +124,36 @@ Kubernetes meta/v1.Duration
 </tr>
 </thead>
 <tbody>
+
+<tr>
+<td>
+<code>kind</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiVersion</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</p>
+</td>
+</tr>
 <tr>
 <td>
 <code>leaderElection</code></br>
 <em>
-<a href="https://godoc.org/k8s.io/component-base/config/v1alpha1#LeaderElectionConfiguration">
-k8s.io/component-base/config/v1alpha1.LeaderElectionConfiguration
-</a>
+<a href="#leaderelectionconfiguration">LeaderElectionConfiguration</a>
 </em>
 </td>
 <td>
@@ -155,9 +187,7 @@ string
 <td>
 <code>controllers</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ControllerConfiguration">
-ControllerConfiguration
-</a>
+<a href="#controllerconfiguration">ControllerConfiguration</a>
 </em>
 </td>
 <td>
@@ -168,26 +198,30 @@ ControllerConfiguration
 <td>
 <code>server</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ServerConfiguration">
-ServerConfiguration
-</a>
+<a href="#serverconfiguration">ServerConfiguration</a>
 </em>
 </td>
 <td>
 <p>Server defines the configuration of the HTTP server.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.HTTPSServer">HTTPSServer
+
+
+<h3 id="httpsserver">HTTPSServer
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ServerConfiguration">ServerConfiguration</a>)
+(<em>Appears on:</em><a href="#serverconfiguration">ServerConfiguration</a>)
 </p>
+
 <p>
-<p>HTTPSServer is the configuration for the HTTPSServer server.</p>
+HTTPSServer is the configuration for the HTTPSServer server.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -196,108 +230,12 @@ ServerConfiguration
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<code>Server</code></br>
-<em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.Server">
-Server
-</a>
-</em>
-</td>
-<td>
-<p>
-(Members of <code>Server</code> are embedded into this type.)
-</p>
-<p>Server is the configuration for the bind address and the port.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>tls</code></br>
-<em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.TLS">
-TLS
-</a>
-</em>
-</td>
-<td>
-<p>TLS contains information about the TLS configuration for a HTTPS server.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.OIDCConfig">OIDCConfig
-</h3>
-<p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ShootControllerConfig">ShootControllerConfig</a>)
-</p>
-<p>
-<p>OIDCConfig is the configuration for the OIDC resources created for trusted shoots.</p>
-</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>audiences</code></br>
-<em>
-[]string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Audiences is the list of audience identifiers used in the OIDC resources for trusted shoots.
-Defaults to [&ldquo;garden&rdquo;].</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>maxTokenExpiration</code></br>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.34/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>MaxTokenExpiration sets a limit to the maximum validity duration of a token.
-Tokens issued with validity greater than this value will not be verified.
-Must be between 5 minutes and 24 hours. Defaults to 2 hours.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.Server">Server
-</h3>
-<p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.HTTPSServer">HTTPSServer</a>, 
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ServerConfiguration">ServerConfiguration</a>)
-</p>
-<p>
-<p>Server contains information for HTTP(S) server configuration.</p>
-</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
+
 <tr>
 <td>
 <code>port</code></br>
 <em>
-int
+integer
 </em>
 </td>
 <td>
@@ -315,17 +253,34 @@ string
 <p>BindAddress is the IP address on which to listen for the specified port.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>tls</code></br>
+<em>
+<a href="#tls">TLS</a>
+</em>
+</td>
+<td>
+<p>TLS contains information about the TLS configuration for a HTTPS server.</p>
+</td>
+</tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.ServerConfiguration">ServerConfiguration
+
+
+<h3 id="oidcconfig">OIDCConfig
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.GardenShootTrustConfiguratorConfiguration">GardenShootTrustConfiguratorConfiguration</a>)
+(<em>Appears on:</em><a href="#shootcontrollerconfig">ShootControllerConfig</a>)
 </p>
+
 <p>
-<p>ServerConfiguration contains details for the HTTP(S) servers.</p>
+OIDCConfig is the configuration for the OIDC resources created for trusted shoots.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -334,13 +289,110 @@ string
 </tr>
 </thead>
 <tbody>
+
+<tr>
+<td>
+<code>audiences</code></br>
+<em>
+string array
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Audiences is the list of audience identifiers used in the OIDC resources for trusted shoots.<br />Defaults to ["garden"].</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>maxTokenExpiration</code></br>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v/#duration-v1-meta">Duration</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>MaxTokenExpiration sets a limit to the maximum validity duration of a token.<br />Tokens issued with validity greater than this value will not be verified.<br />Must be between 5 minutes and 24 hours. Defaults to 2 hours.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="server">Server
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#httpsserver">HTTPSServer</a>, <a href="#serverconfiguration">ServerConfiguration</a>)
+</p>
+
+<p>
+Server contains information for HTTP(S) server configuration.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>port</code></br>
+<em>
+integer
+</em>
+</td>
+<td>
+<p>Port is the port on which to serve requests.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>bindAddress</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>BindAddress is the IP address on which to listen for the specified port.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="serverconfiguration">ServerConfiguration
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#gardenshoottrustconfiguratorconfiguration">GardenShootTrustConfiguratorConfiguration</a>)
+</p>
+
+<p>
+ServerConfiguration contains details for the HTTP(S) servers.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
 <tr>
 <td>
 <code>webhooks</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.HTTPSServer">
-HTTPSServer
-</a>
+<a href="#httpsserver">HTTPSServer</a>
 </em>
 </td>
 <td>
@@ -351,9 +403,7 @@ HTTPSServer
 <td>
 <code>healthProbes</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.Server">
-Server
-</a>
+<a href="#server">Server</a>
 </em>
 </td>
 <td>
@@ -365,9 +415,7 @@ Server
 <td>
 <code>metrics</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.Server">
-Server
-</a>
+<a href="#server">Server</a>
 </em>
 </td>
 <td>
@@ -375,17 +423,23 @@ Server
 <p>Metrics is the configuration for serving the metrics endpoint.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.ShootControllerConfig">ShootControllerConfig
+
+
+<h3 id="shootcontrollerconfig">ShootControllerConfig
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration</a>)
+(<em>Appears on:</em><a href="#controllerconfiguration">ControllerConfiguration</a>)
 </p>
+
 <p>
-<p>ShootControllerConfig is the configuration for the shoot controller.</p>
+ShootControllerConfig is the configuration for the shoot controller.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -394,13 +448,12 @@ Server
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>syncPeriod</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.34/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v/#duration-v1-meta">Duration</a>
 </em>
 </td>
 <td>
@@ -412,9 +465,7 @@ Kubernetes meta/v1.Duration
 <td>
 <code>oidcConfig</code></br>
 <em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.OIDCConfig">
-OIDCConfig
-</a>
+<a href="#oidcconfig">OIDCConfig</a>
 </em>
 </td>
 <td>
@@ -422,17 +473,23 @@ OIDCConfig
 <p>OIDCConfig is the configuration for the OIDC resources which are created for trusted shoots.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="config.trust-configurator.gardener.cloud/v1alpha1.TLS">TLS
+
+
+<h3 id="tls">TLS
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#config.trust-configurator.gardener.cloud/v1alpha1.HTTPSServer">HTTPSServer</a>)
+(<em>Appears on:</em><a href="#httpsserver">HTTPSServer</a>)
 </p>
+
 <p>
-<p>TLS contains information about the TLS configuration for a HTTPS server.</p>
+TLS contains information about the TLS configuration for a HTTPS server.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -441,6 +498,7 @@ OIDCConfig
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>serverCertDir</code></br>
@@ -449,13 +507,11 @@ string
 </em>
 </td>
 <td>
-<p>ServerCertDir is the path to a directory containing the server&rsquo;s TLS certificate and key (the files must be
-named tls.crt and tls.key respectively).</p>
+<p>ServerCertDir is the path to a directory containing the server's TLS certificate and key (the files must be<br />named tls.crt and tls.key respectively).</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<hr/>
-<p><em>
-Generated with <a href="https://github.com/ahmetb/gen-crd-api-reference-docs">gen-crd-api-reference-docs</a>
-</em></p>
+
+
