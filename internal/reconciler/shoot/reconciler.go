@@ -168,7 +168,7 @@ func (r *Reconciler) validateNoDuplicateIssuer(ctx context.Context, shoot *garde
 		return fmt.Errorf("failed to list OIDC resources for duplicate issuer check: %w", err)
 	}
 
-	expectedName := GetOIDCResourceName(shoot)
+	expectedName := getOIDCResourceName(shoot)
 	for _, existing := range oidcList.Items {
 		if existing.Name == expectedName {
 			continue
@@ -183,14 +183,14 @@ func (r *Reconciler) validateNoDuplicateIssuer(ctx context.Context, shoot *garde
 func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDConnect {
 	return &authenticationv1alpha1.OpenIDConnect{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: GetOIDCResourceName(shoot),
+			Name: getOIDCResourceName(shoot),
 		},
 	}
 }
 
-// GetOIDCResourceName returns the OIDC resource name for the given shoot.
+// getOIDCResourceName returns the OIDC resource name for the given shoot.
 // The expected format is "<namespace>--<name>--<uid>".
-func GetOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
+func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
 	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
 }
 
