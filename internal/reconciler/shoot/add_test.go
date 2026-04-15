@@ -16,7 +16,7 @@ import (
 	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 )
 
-var _ = Describe("ShootPredicate", func() {
+var _ = Describe("#ShootPredicate", func() {
 	const (
 		shootName      = "my-shoot"
 		shootNamespace = "garden-abc"
@@ -49,7 +49,7 @@ var _ = Describe("ShootPredicate", func() {
 		}
 	})
 
-	Describe("IsRelevantShoot", func() {
+	Describe("#IsRelevantShoot", func() {
 		It("should return true for a shoot with the 'authentication.gardener.cloud/trusted' annotation set to 'true'", func() {
 			Expect(reconciler.IsRelevantShoot(shoot)).To(BeTrue())
 		})
@@ -82,7 +82,7 @@ var _ = Describe("ShootPredicate", func() {
 		})
 	})
 
-	Describe("IsRelevantShootUpdate", func() {
+	Describe("#IsRelevantShootUpdate", func() {
 		It("should return true if the shoot is updated to be trusted", func() {
 			oldShoot := &gardencorev1beta1.Shoot{
 				ObjectMeta: metav1.ObjectMeta{

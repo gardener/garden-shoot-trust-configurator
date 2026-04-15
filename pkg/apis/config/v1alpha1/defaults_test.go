@@ -18,7 +18,7 @@ import (
 	. "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
-var _ = Describe("Defaults", func() {
+var _ = Describe("SetDefaults", func() {
 	Describe("#SetDefaults_GardenShootTrustConfiguratorConfiguration", func() {
 		var obj *GardenShootTrustConfiguratorConfiguration
 
@@ -205,6 +205,14 @@ var _ = Describe("Defaults", func() {
 				Expect(obj.HealthProbes).NotTo(BeNil())
 				Expect(obj.HealthProbes.Port).To(Equal(8081))
 			})
+
+			It("should not overwrite already set HealthProbes", func() {
+				obj.HealthProbes = &Server{Port: 9090}
+
+				SetDefaults_ServerConfiguration(obj)
+
+				Expect(obj.HealthProbes.Port).To(Equal(9090))
+			})
 		})
 
 		Context("Metrics", func() {
@@ -213,16 +221,6 @@ var _ = Describe("Defaults", func() {
 
 				Expect(obj.Metrics).NotTo(BeNil())
 				Expect(obj.Metrics.Port).To(Equal(8080))
-			})
-		})
-
-		Context("should not overwrite already set values", func() {
-			It("should not overwrite already set HealthProbes", func() {
-				obj.HealthProbes = &Server{Port: 9090}
-
-				SetDefaults_ServerConfiguration(obj)
-
-				Expect(obj.HealthProbes.Port).To(Equal(9090))
 			})
 
 			It("should not overwrite already set Metrics", func() {
@@ -266,7 +264,7 @@ var _ = Describe("Defaults", func() {
 			obj = &componentbaseconfigv1alpha1.LeaderElectionConfiguration{}
 		})
 
-		Context("should default to recommended leader election values", func() {
+		Context("DefaultLeaderElectionConfiguration", func() {
 			It("should set default recommended leader election values", func() {
 				SetDefaults_LeaderElectionConfiguration(obj)
 

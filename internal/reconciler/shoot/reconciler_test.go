@@ -7,7 +7,6 @@ package reconciler_test
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -29,10 +28,9 @@ import (
 
 	shootcontroller "github.com/gardener/garden-shoot-trust-configurator/internal/reconciler/shoot"
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
-	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/constants"
 )
 
-var _ = Describe("Reconciler", func() {
+var _ = Describe("#ShootReconciler", func() {
 	const (
 		shootName      = "my-shoot"
 		shootNamespace = "garden-abc"
@@ -40,7 +38,7 @@ var _ = Describe("Reconciler", func() {
 	)
 
 	var (
-		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
+		ctx context.Context
 
 		reconciler *shootcontroller.Reconciler
 		fakeClient client.Client
@@ -54,6 +52,8 @@ var _ = Describe("Reconciler", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
+
 		scheme := runtime.NewScheme()
 		Expect(kubernetes.AddGardenSchemeToScheme(scheme)).To(Succeed())
 		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())
@@ -93,267 +93,264 @@ var _ = Describe("Reconciler", func() {
 
 		oidc = &authenticationv1alpha1.OpenIDConnect{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: getOIDCResourceName(shoot),
+				Name: shootcontroller.GetOIDCResourceName(shoot),
 			},
 		}
 		oidcObjectKey = client.ObjectKey{Name: oidc.Name}
 	})
 
-	It("should create OIDC resource", func() {
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+	Describe("#Reconcile", func() {
+		It("should create OIDC resource", func() {
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
 
-		Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
-		Expect(oidc).To(Equal(
-			&authenticationv1alpha1.OpenIDConnect{
+			Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
+			Expect(oidc).To(Equal(
+				&authenticationv1alpha1.OpenIDConnect{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: oidc.Name,
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+						},
+						ResourceVersion: "1",
+					},
+					Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+						IssuerURL:                 "https://shoot/issuer",
+						Audiences:                 []string{"garden"},
+						UsernameClaim:             ptr.To("sub"),
+						UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+						GroupsClaim:               ptr.To("groups"),
+						GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+						MaxTokenExpirationSeconds: ptr.To(int64(7200)),
+					},
+				},
+			))
+		})
+
+		It("should create OIDC resource when shoot annotation is set to 'True'", func() {
+			shoot.Annotations["authentication.gardener.cloud/trusted"] = "True"
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+
+			Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
+			Expect(oidc).To(Equal(
+				&authenticationv1alpha1.OpenIDConnect{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: oidc.Name,
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
+						},
+						ResourceVersion: "1",
+					},
+					Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+						IssuerURL:                 "https://shoot/issuer",
+						Audiences:                 []string{"garden"},
+						UsernameClaim:             ptr.To("sub"),
+						UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+						GroupsClaim:               ptr.To("groups"),
+						GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
+						MaxTokenExpirationSeconds: ptr.To(int64(7200)),
+					},
+				},
+			))
+		})
+
+		It("should add trust-configurator shoot finalizer if missing", func() {
+			shoot.Finalizers = nil
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+
+			var updatedShoot gardencorev1beta1.Shoot
+			Expect(fakeClient.Get(ctx, shootObjectKey, &updatedShoot)).To(Succeed())
+			Expect(updatedShoot.Finalizers).To(ContainElement(finalizer))
+		})
+
+		It("should delete OIDC resource because shoot has no managed issuer annotation", func() {
+			shoot.Annotations = map[string]string{}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+			// Create OIDC resource that should be deleted
+			Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should delete OIDC resource because shoot is not trusted", func() {
+			shoot.Annotations = map[string]string{
+				"authentication.gardener.cloud/issuer":  "managed",
+				"authentication.gardener.cloud/trusted": "false",
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+			// Create OIDC resource that should be deleted
+			Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should do nothing when shoot is not trusted and OIDC resource does not exist", func() {
+			shoot.Annotations = map[string]string{
+				"authentication.gardener.cloud/issuer":  "managed",
+				"authentication.gardener.cloud/trusted": "false",
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should delete OIDC resource because shoot is being deleted", func() {
+			// Adding a finalizer to simulate that the shoot is being deleted and not yet fully deleted to trigger the shoot.DeletionTimestamp check
+			// Even if the trust-configurator finalizer is missing, we want to ensure that the OIDC resource is deleted
+			shoot.Finalizers = []string{"some/finalizer"}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+			// Create OIDC resource that should be deleted
+			Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
+
+			Expect(fakeClient.Delete(ctx, shoot)).To(Succeed())
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+			Expect(fakeClient.Get(ctx, shootObjectKey, shoot)).To(Succeed())
+		})
+
+		It("should delete OIDC resource because shoot annotation is invalid", func() {
+			shoot.Annotations = map[string]string{
+				"authentication.gardener.cloud/issuer":  "managed",
+				"authentication.gardener.cloud/trusted": "foo",
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+			// Create OIDC resource that should be deleted
+			Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error because shoot status.advertisedAddresses is empty", func() {
+			shoot.Status.AdvertisedAddresses = nil
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error because shoot status.advertisedAddresses has no service account issuer", func() {
+			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
+				{
+					Name: "foo",
+					URL:  "https://foo",
+				},
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error when another managed OIDC resource already uses the same issuer", func() {
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: oidc.Name,
+					Name: "other-ns--other-shoot--other-uid",
 					Labels: map[string]string{
 						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
 					},
-					ResourceVersion: "1",
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL:                 "https://shoot/issuer",
-					Audiences:                 []string{"garden"},
-					UsernameClaim:             ptr.To("sub"),
-					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					GroupsClaim:               ptr.To("groups"),
-					GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					MaxTokenExpirationSeconds: ptr.To(int64(7200)),
+					IssuerURL: "https://shoot/issuer",
 				},
-			},
-		))
-	})
+			}
+			Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
 
-	It("should create OIDC resource when shoot annotation is set to 'True'", func() {
-		shoot.Annotations["authentication.gardener.cloud/trusted"] = "True"
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("already registered"))
+			Expect(res).To(Equal(ctrl.Result{}))
+		})
 
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+		It("should result in error when an unmanaged OIDC resource already uses the same issuer", func() {
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
-		Expect(fakeClient.Get(ctx, oidcObjectKey, oidc)).To(Succeed())
-		Expect(oidc).To(Equal(
-			&authenticationv1alpha1.OpenIDConnect{
+			conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: oidc.Name,
+					Name: "manually-created-oidc",
+				},
+				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
+					IssuerURL: "https://shoot/issuer",
+				},
+			}
+			Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("already registered"))
+			Expect(res).To(Equal(ctrl.Result{}))
+		})
+
+		It("should not consider the shoot's own OIDC resource as a duplicate", func() {
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			existingOIDC := &authenticationv1alpha1.OpenIDConnect{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: shootcontroller.GetOIDCResourceName(shoot),
 					Labels: map[string]string{
 						"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
 					},
-					ResourceVersion: "1",
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL:                 "https://shoot/issuer",
-					Audiences:                 []string{"garden"},
-					UsernameClaim:             ptr.To("sub"),
-					UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					GroupsClaim:               ptr.To("groups"),
-					GroupsPrefix:              ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
-					MaxTokenExpirationSeconds: ptr.To(int64(7200)),
+					IssuerURL: "https://shoot/issuer",
 				},
-			},
-		))
-	})
+			}
+			Expect(fakeClient.Create(ctx, existingOIDC)).To(Succeed())
 
-	It("should add trust-configurator shoot finalizer if missing", func() {
-		shoot.Finalizers = nil
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
-
-		var updatedShoot gardencorev1beta1.Shoot
-		Expect(fakeClient.Get(ctx, shootObjectKey, &updatedShoot)).To(Succeed())
-		Expect(updatedShoot.Finalizers).To(ContainElement(finalizer))
-	})
-
-	It("should delete OIDC resource because shoot has no managed issuer annotation", func() {
-		shoot.Annotations = map[string]string{}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-		// Create OIDC resource that should be deleted
-		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should delete OIDC resource because shoot is not trusted", func() {
-		shoot.Annotations = map[string]string{
-			"authentication.gardener.cloud/issuer":  "managed",
-			"authentication.gardener.cloud/trusted": "false",
-		}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-		// Create OIDC resource that should be deleted
-		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should do nothing when shoot is not trusted and OIDC resource does not exist", func() {
-		shoot.Annotations = map[string]string{
-			"authentication.gardener.cloud/issuer":  "managed",
-			"authentication.gardener.cloud/trusted": "false",
-		}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should delete OIDC resource because shoot is being deleted", func() {
-		// Adding a finalizer to simulate that the shoot is being deleted and not yet fully deleted to trigger the shoot.DeletionTimestamp check
-		// Even if the trust-configurator finalizer is missing, we want to ensure that the OIDC resource is deleted
-		shoot.Finalizers = []string{"some/finalizer"}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-		// Create OIDC resource that should be deleted
-		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
-
-		Expect(fakeClient.Delete(ctx, shoot)).To(Succeed())
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-		Expect(fakeClient.Get(ctx, shootObjectKey, shoot)).To(Succeed())
-	})
-
-	It("should delete OIDC resource because shoot annotation is invalid", func() {
-		shoot.Annotations = map[string]string{
-			"authentication.gardener.cloud/issuer":  "managed",
-			"authentication.gardener.cloud/trusted": "foo",
-		}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-		// Create OIDC resource that should be deleted
-		Expect(fakeClient.Create(ctx, oidc)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should result in error because shoot status.advertisedAddresses is empty", func() {
-		shoot.Status.AdvertisedAddresses = nil
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).To(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should result in error because shoot status.advertisedAddresses has no service account issuer", func() {
-		shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
-			{
-				Name: "foo",
-				URL:  "https://foo",
-			},
-		}
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).To(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{}))
-
-		var oidcList authenticationv1alpha1.OpenIDConnectList
-		Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
-		Expect(oidcList.Items).To(BeEmpty())
-	})
-
-	It("should result in error when another managed OIDC resource already uses the same issuer", func() {
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "other-ns--other-shoot--other-uid",
-				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
-				},
-			},
-			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-				IssuerURL: "https://shoot/issuer",
-			},
-		}
-		Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("already registered"))
-		Expect(res).To(Equal(ctrl.Result{}))
-	})
-
-	It("should result in error when an unmanaged OIDC resource already uses the same issuer", func() {
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		conflictingOIDC := &authenticationv1alpha1.OpenIDConnect{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "manually-created-oidc",
-			},
-			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-				IssuerURL: "https://shoot/issuer",
-			},
-		}
-		Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("already registered"))
-		Expect(res).To(Equal(ctrl.Result{}))
-	})
-
-	It("should not consider the shoot's own OIDC resource as a duplicate", func() {
-		Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
-
-		existingOIDC := &authenticationv1alpha1.OpenIDConnect{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: getOIDCResourceName(shoot),
-				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "garden-shoot-trust-configurator",
-				},
-			},
-			Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-				IssuerURL: "https://shoot/issuer",
-			},
-		}
-		Expect(fakeClient.Create(ctx, existingOIDC)).To(Succeed())
-
-		res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(ctrl.Result{RequeueAfter: time.Hour}))
+		})
 	})
 })
-
-// The expected format is "<namespace>--<name>--<uid>".
-func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
-	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
-}

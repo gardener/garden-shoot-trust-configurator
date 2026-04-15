@@ -188,6 +188,7 @@ func emptyOIDC(shoot *gardencorev1beta1.Shoot) *authenticationv1alpha1.OpenIDCon
 	}
 }
 
+// getOIDCResourceName returns the OIDC resource name for the given shoot.
 // The expected format is "<namespace>--<name>--<uid>".
 func getOIDCResourceName(shoot *gardencorev1beta1.Shoot) string {
 	return strings.Join([]string{shoot.Namespace, shoot.Name, string(shoot.UID)}, constants.Separator)
