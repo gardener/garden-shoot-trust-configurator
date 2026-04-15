@@ -23,9 +23,7 @@ func AddToManager(mgr manager.Manager, logger logr.Logger) error {
 	logger.Info("Adding OIDC webhook handler to manager")
 
 	webhook := &admission.Webhook{
-		Handler: &Handler{
-			Decoder: admission.NewDecoder(mgr.GetScheme()),
-		},
+		Handler:      NewHandler(admission.NewDecoder(mgr.GetScheme())),
 		RecoverPanic: ptr.To(true),
 	}
 

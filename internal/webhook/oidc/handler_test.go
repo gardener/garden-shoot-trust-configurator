@@ -22,36 +22,25 @@ import (
 	"github.com/gardener/garden-shoot-trust-configurator/internal/webhook/oidc"
 )
 
-var _ = Describe("handler", func() {
+var _ = Describe("#Handler", func() {
 	var (
-		ctx = context.TODO()
+		ctx context.Context
 
-		decoder admission.Decoder
 		handler admission.Handler
 		request admission.Request
 		encoder runtime.Encoder
 
-		responseAllowed = admission.Response{
-			AdmissionResponse: admissionv1.AdmissionResponse{
-				Allowed: true,
-				Result: &metav1.Status{
-					Code: int32(http.StatusOK),
-				},
-			},
-		}
+		responseAllowed admission.Response
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
+
 		scheme := runtime.NewScheme()
 		Expect(kubernetes.AddGardenSchemeToScheme(scheme)).To(Succeed())
 		Expect(authenticationv1.AddToScheme(scheme)).To(Succeed())
 
-		ctx = context.TODO()
-
-		decoder = admission.NewDecoder(scheme)
-		handler = &oidc.Handler{
-			Decoder: decoder,
-		}
+		handler = oidc.NewHandler(admission.NewDecoder(scheme))
 
 		encoder = &json.Serializer{}
 		request.UserInfo = authenticationv1.UserInfo{
@@ -61,6 +50,15 @@ var _ = Describe("handler", func() {
 			Resource: "openidconnects",
 		}
 		request.Operation = admissionv1.Update
+
+		responseAllowed = admission.Response{
+			AdmissionResponse: admissionv1.AdmissionResponse{
+				Allowed: true,
+				Result: &metav1.Status{
+					Code: int32(http.StatusOK),
+				},
+			},
+		}
 	})
 
 	Describe("#Handle", func() {

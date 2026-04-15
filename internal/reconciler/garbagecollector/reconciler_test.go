@@ -26,18 +26,23 @@ import (
 	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
-var _ = Describe("Controller", func() {
+var _ = Describe("#Controller", func() {
 	var (
-		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
+		ctx context.Context
 
 		gc         *garbagecollectorcontroller.Reconciler
 		fakeClient client.Client
 
-		creationTimestamp = metav1.Date(2000, 5, 5, 5, 30, 0, 0, time.Local)
-		fakeClock         = testclock.NewFakeClock(creationTimestamp.Add(time.Minute / 2))
+		creationTimestamp metav1.Time
+		fakeClock         *testclock.FakeClock
 	)
 
 	BeforeEach(func() {
+		ctx = logf.IntoContext(context.Background(), logzap.New(logzap.WriteTo(GinkgoWriter)))
+
+		creationTimestamp = metav1.Date(2000, 5, 5, 5, 30, 0, 0, time.Local)
+		fakeClock = testclock.NewFakeClock(creationTimestamp.Add(time.Minute / 2))
+
 		scheme := runtime.NewScheme()
 		Expect(kubernetes.AddGardenSchemeToScheme(scheme)).To(Succeed())
 		Expect(authenticationv1alpha1.AddToScheme(scheme)).To(Succeed())

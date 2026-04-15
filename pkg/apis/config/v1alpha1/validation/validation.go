@@ -9,15 +9,14 @@ import (
 
 	"github.com/gardener/gardener/pkg/logger"
 	validationutils "github.com/gardener/gardener/pkg/utils/validation"
-	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/gardener/garden-shoot-trust-configurator/pkg/apis/config/v1alpha1"
 )
 
-// ValidateGardenShootTrustConfiguratorConfiguration validates the given `GardenShootTrustConfiguratorConfiguration`.
-func ValidateGardenShootTrustConfiguratorConfiguration(conf *v1alpha1.GardenShootTrustConfiguratorConfiguration) field.ErrorList {
+// ValidateGardenShootTrustConfiguratorConfiguration validates the given [*configv1alpha1.GardenShootTrustConfiguratorConfiguration].
+func ValidateGardenShootTrustConfiguratorConfiguration(conf *configv1alpha1.GardenShootTrustConfiguratorConfiguration) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if conf.LogLevel != "" {
@@ -40,18 +39,45 @@ func ValidateGardenShootTrustConfiguratorConfiguration(conf *v1alpha1.GardenShoo
 }
 
 // validateControllers validates the controllers configuration.
-func validateControllers(controllers *v1alpha1.ControllerConfiguration, fldPath *field.Path) field.ErrorList {
+func validateControllers(controllers *configv1alpha1.ControllerConfiguration, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if controllers.Shoot.OIDCConfig != nil {
-		allErrs = append(allErrs, validateOIDCConfig(controllers.Shoot.OIDCConfig, fldPath.Child("shoot", "oidcConfig"))...)
+	allErrs = append(allErrs, validateShootControllerConfig(&controllers.Shoot, fldPath.Child("shoot"))...)
+	allErrs = append(allErrs, validateGarbageCollectorControllerConfig(&controllers.GarbageCollector, fldPath.Child("garbageCollector"))...)
+
+	return allErrs
+}
+
+// validateShootControllerConfig validates the shoot controller configuration.
+func validateShootControllerConfig(config *configv1alpha1.ShootControllerConfig, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if config.SyncPeriod != nil && config.SyncPeriod.Duration <= 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("syncPeriod"), config.SyncPeriod.Duration.String(), "must be positive"))
+	}
+	if config.OIDCConfig != nil {
+		allErrs = append(allErrs, validateOIDCConfig(config.OIDCConfig, fldPath.Child("oidcConfig"))...)
+	}
+
+	return allErrs
+}
+
+// validateGarbageCollectorControllerConfig validates the garbage collector controller configuration.
+func validateGarbageCollectorControllerConfig(config *configv1alpha1.GarbageCollectorControllerConfig, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if config.SyncPeriod != nil && config.SyncPeriod.Duration <= 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("syncPeriod"), config.SyncPeriod.Duration.String(), "must be positive"))
+	}
+	if config.MinimumObjectLifetime != nil && config.MinimumObjectLifetime.Duration <= 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("minimumObjectLifetime"), config.MinimumObjectLifetime.Duration.String(), "must be positive"))
 	}
 
 	return allErrs
 }
 
 // validateOIDCConfig validates the OIDC configuration.
-func validateOIDCConfig(config *v1alpha1.OIDCConfig, fldPath *field.Path) field.ErrorList {
+func validateOIDCConfig(config *configv1alpha1.OIDCConfig, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if config.MaxTokenExpiration != nil {
@@ -64,18 +90,35 @@ func validateOIDCConfig(config *v1alpha1.OIDCConfig, fldPath *field.Path) field.
 		}
 	}
 
+	for i, audience := range config.Audiences {
+		if audience == "" {
+			allErrs = append(allErrs, field.Required(fldPath.Child("audiences").Index(i), "audience must not be empty"))
+		}
+	}
+
 	return allErrs
 }
 
 // validateServerConfiguration validates the server configuration.
-func validateServerConfiguration(config *v1alpha1.ServerConfiguration, fldPath *field.Path) field.ErrorList {
+func validateServerConfiguration(config *configv1alpha1.ServerConfiguration, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.HealthProbes.Port), fldPath.Child("healthProbes", "port"))...)
-	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(config.Webhooks.Port), fldPath.Child("webhooks", "port"))...)
+	allErrs = append(allErrs, validatePortField(config.HealthProbes.Port, fldPath.Child("healthProbes", "port"))...)
+	allErrs = append(allErrs, validatePortField(config.Webhooks.Port, fldPath.Child("webhooks", "port"))...)
 
 	if config.Webhooks.TLS.ServerCertDir == "" {
 		allErrs = append(allErrs, field.Required(fldPath.Child("webhooks", "tls", "serverCertDir"), "server certificate directory is required"))
 	}
 
 	return allErrs
+}
+
+// validatePortField validates that a port number is in the valid range [1, 65535].
+func validatePortField(port int, fldPath *field.Path) field.ErrorList {
+	if port == 0 {
+		return field.ErrorList{field.Required(fldPath, "port is required")}
+	}
+	if port < 0 || port > 65535 {
+		return field.ErrorList{field.Invalid(fldPath, port, "port must be between 1 and 65535")}
+	}
+	return nil
 }

@@ -19,7 +19,14 @@ import (
 // Handler is an admission webhook handler that restricts updates to certain fields
 // of managed OpenIDConnect resources.
 type Handler struct {
-	Decoder admission.Decoder
+	decoder admission.Decoder
+}
+
+// NewHandler creates a new Handler with the given decoder.
+func NewHandler(decoder admission.Decoder) *Handler {
+	return &Handler{
+		decoder: decoder,
+	}
 }
 
 // Handle handles an admission request for an OIDC resource and restricts updates to labels
@@ -30,7 +37,7 @@ func (h *Handler) Handle(_ context.Context, req admission.Request) admission.Res
 	}
 
 	oldObj := &authenticationv1alpha1.OpenIDConnect{}
-	if err := h.Decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+	if err := h.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
@@ -40,7 +47,7 @@ func (h *Handler) Handle(_ context.Context, req admission.Request) admission.Res
 	}
 
 	newObj := &authenticationv1alpha1.OpenIDConnect{}
-	if err := h.Decoder.DecodeRaw(req.Object, newObj); err != nil {
+	if err := h.decoder.DecodeRaw(req.Object, newObj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
