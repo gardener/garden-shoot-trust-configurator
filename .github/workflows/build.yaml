@@ -20,8 +20,33 @@ jobs:
     permissions:
       id-token: write
 
-  # TODO(theoddora): Add helmcharts job once we have charts
-  # helmcharts:
+  helmcharts:
+    name: Build Helmcharts
+    needs:
+      - prepare
+      - oci-images
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@v1
+    strategy:
+      matrix:
+        args:
+          - name: garden-shoot-trust-configurator
+            dir: charts/garden-shoot-trust-configurator
+            oci-repository: charts/gardener
+            ocm-mappings:
+              - ref: ocm-resource:garden-shoot-trust-configurator.repository
+                attribute: runtime.image.repository
+              - ref: ocm-resource:garden-shoot-trust-configurator.tag
+                attribute: runtime.image.tag
+    with:
+      name: ${{ matrix.args.name }}
+      dir: ${{ matrix.args.dir }}
+      oci-registry: ${{ needs.prepare.outputs.oci-registry }}
+      oci-repository: ${{ matrix.args.oci-repository }}
+      ocm-mappings: ${{ toJSON(matrix.args.ocm-mappings) }}
 
   oci-images:
     name: Build OCI-Images
