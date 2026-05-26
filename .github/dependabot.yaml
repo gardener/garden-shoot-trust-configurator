@@ -15,7 +15,9 @@ updates:
     - dependency-name: "github.com/gardener/gardener/pkg/apis"
     - dependency-name: "github.com/gardener/oidc-webhook-authenticator"
     - dependency-name: "k8s.io/.*"
-    - dependency-name: "sigs.k8s.io/controller-runtime"
+    - dependency-name: "sigs.k8s.io/.*"
+    - dependency-name: "golang.org/x/.*"
+    - dependency-name: "github.com/go-jose/.*"
     groups:
       gardener:
         patterns:
