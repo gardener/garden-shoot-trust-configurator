@@ -25,6 +25,7 @@ endif
 TOOLS_DIR := hack/tools
 include $(GARDENER_HACK_DIR)/tools.mk
 
+# TODO: Remove this override once the gardener/hack/tools.mk fix is released.
 $(TYPOS): $(call tool_version_file,$(TYPOS),$(TYPOS_VERSION))
 	@TYPOS_VERSION=$(TYPOS_VERSION) bash $(GARDENER_TOOL_DIR)/install-typos.sh
 

@@ -2,10 +2,9 @@ module github.com/gardener/garden-shoot-trust-configurator
 
 go 1.26.2
 
-tool github.com/gardener/gardener/hack/tools
-
 require (
 	github.com/gardener/gardener v1.147.1
+	github.com/gardener/gardener/hack/tools v1.147.1
 	github.com/gardener/gardener/pkg/apis v1.147.1
 	github.com/gardener/oidc-webhook-authenticator v0.44.0
 	github.com/go-logr/logr v1.4.3
@@ -66,7 +65,6 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
 	github.com/gardener/etcd-druid/api v0.37.0 // indirect
-	github.com/gardener/gardener/hack/tools v1.147.1 // indirect
 	github.com/gardener/machine-controller-manager v0.62.1 // indirect
 	github.com/gardener/pvc-autoscaler v0.2.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect

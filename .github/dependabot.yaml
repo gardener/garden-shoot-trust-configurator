@@ -13,6 +13,7 @@ updates:
     allow:
     - dependency-name: "github.com/gardener/gardener"
     - dependency-name: "github.com/gardener/gardener/pkg/apis"
+    - dependency-name: "github.com/gardener/gardener/hack/tools"
     - dependency-name: "github.com/gardener/oidc-webhook-authenticator"
     - dependency-name: "k8s.io/.*"
     - dependency-name: "sigs.k8s.io/.*"
@@ -23,6 +24,7 @@ updates:
         patterns:
           - "github.com/gardener/gardener"
           - "github.com/gardener/gardener/pkg/apis"
+          - "github.com/gardener/gardener/hack/tools"
   # Create PRs for golang version updates
   - package-ecosystem: docker
     directory: /
