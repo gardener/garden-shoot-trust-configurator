@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+ENSURE_GARDENER_TOOLS_MOD   := $(shell go get github.com/gardener/gardener/hack/tools@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener/hack/tools))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+GARDENER_TOOL_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener/hack/tools)
 NAME                        := garden-shoot-trust-configurator
 IMAGE                       := europe-docker.pkg.dev/gardener-project/public/gardener/$(NAME)
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -20,8 +22,12 @@ ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
 
-TOOLS_DIR := $(REPO_ROOT)/hack/tools
+TOOLS_DIR := hack/tools
 include $(GARDENER_HACK_DIR)/tools.mk
+
+# TODO: Remove this override once the gardener/hack/tools.mk fix is released.
+$(TYPOS): $(call tool_version_file,$(TYPOS),$(TYPOS_VERSION))
+	@TYPOS_VERSION=$(TYPOS_VERSION) bash $(GARDENER_TOOL_DIR)/install-typos.sh
 
 .PHONY: start
 start:
