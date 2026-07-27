@@ -94,4 +94,4 @@ runtime:
       minAllowed:
         memory: 64Mi
     updatePolicy:
-      updateMode: "Recreate"
+      updateMode: "InPlaceOrRecreate"
