@@ -5,7 +5,6 @@
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 ENSURE_GARDENER_TOOLS_MOD   := $(shell go get github.com/gardener/gardener/hack/tools@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener/hack/tools))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
-GARDENER_TOOL_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener/hack/tools)
 NAME                        := garden-shoot-trust-configurator
 IMAGE                       := europe-docker.pkg.dev/gardener-project/public/gardener/$(NAME)
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -24,10 +23,6 @@ endif
 
 TOOLS_DIR := hack/tools
 include $(GARDENER_HACK_DIR)/tools.mk
-
-# TODO: Remove this override once the gardener/hack/tools.mk fix is released.
-$(TYPOS): $(call tool_version_file,$(TYPOS),$(TYPOS_VERSION))
-	@TYPOS_VERSION=$(TYPOS_VERSION) bash $(GARDENER_TOOL_DIR)/install-typos.sh
 
 .PHONY: start
 start:
@@ -69,7 +64,7 @@ check-generate:
 	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
 
 .PHONY: check
-check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS) 
+check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(TYPOS)
 	go vet ./...
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./internal/... ./pkg/...
 	@echo "> Check Typos"
@@ -105,7 +100,7 @@ sast-report: $(GOSEC)
 
 .PHONY: test
 test: $(REPORT_COLLECTOR)
-	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/... ./pkg/...	
+	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./internal/... ./pkg/...
 
 .PHONY: test-cov
 test-cov:
