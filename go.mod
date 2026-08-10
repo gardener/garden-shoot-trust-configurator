@@ -3,9 +3,9 @@ module github.com/gardener/garden-shoot-trust-configurator
 go 1.26.4
 
 require (
-	github.com/gardener/gardener v1.148.0
-	github.com/gardener/gardener/hack/tools v1.148.0
-	github.com/gardener/gardener/pkg/apis v1.148.0
+	github.com/gardener/gardener v1.148.2
+	github.com/gardener/gardener/hack/tools v1.148.2
+	github.com/gardener/gardener/pkg/apis v1.148.2
 	github.com/gardener/oidc-webhook-authenticator v0.44.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.32.0
