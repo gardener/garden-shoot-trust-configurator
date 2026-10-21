@@ -1,6 +1,6 @@
 module github.com/gardener/garden-shoot-trust-configurator
 
-go 1.26
+go 1.26.8
 
 require (
 	github.com/gardener/gardener v1.153.1
