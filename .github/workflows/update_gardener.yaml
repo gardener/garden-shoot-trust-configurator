@@ -2,38 +2,36 @@ name: Update Gardener
 on:
   push:
     branches:
-    - dependabot/go_modules/gardener-*
+      - dependabot/go_modules/gardener-*
+      - dependabot/go_modules/github.com/gardener/**
 
-permissions: write-all
+permissions:
+  contents: write
 
 jobs:
   run:
     name: Run make tidy
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v7
-    - name: get-go-version
-      id: go-version
-      shell: bash
-      run: |
-        version=$(grep -oP 'FROM.*golang:\K[0-9]+\.[0-9]+\.[0-9]+' Dockerfile)
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-    - uses: actions/setup-go@v7
-      with:
-        go-version: ${{ steps.go-version.outputs.version }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
 
-    - name: Make tidy
-      run: make tidy
-    - name: Commit changes
-      run: |
-        # Exit early if there is nothing to commit. This can happen if someone pushes to the dependabot's PR (for example has to adapt to a breaking change).
-        if [[ -z $(git status --porcelain) ]]; then
-          echo "Nothing to commit, working tree clean. Exiting..."
-          exit 0
-        fi
+      - name: Make tidy
+        run: make tidy
+      - name: Commit changes
+        run: |
+          # Exit early if there is nothing to commit. This can happen if someone pushes to the dependabot's PR (for example has to adapt to a breaking change).
+          if [[ -z $(git status --porcelain) ]]; then
+            echo "Nothing to commit, working tree clean. Exiting..."
+            exit 0
+          fi
 
-        git config user.name gardener-robot-ci-1
-        git config user.email gardener.ci.user@gmail.com
-        git add .
-        git commit --signoff -m "[dependabot skip] make tidy"
-        git push origin
+          git config user.name gardener-robot-ci-1
+          git config user.email gardener.ci.user@gmail.com
+          git add .
+          git commit --signoff -m "[dependabot skip] make tidy"
+          git push origin
