@@ -5,20 +5,25 @@
 package reconciler
 
 import (
+	"context"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/controllerutils"
+	authenticationv1alpha1 "github.com/gardener/oidc-webhook-authenticator/apis/authentication/v1alpha1"
 	"golang.org/x/time/rate"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -41,7 +46,12 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
-		For(&gardencorev1beta1.Shoot{}, builder.WithPredicates(r.ShootPredicate())).
+		For(&gardencorev1beta1.Shoot{}, builder.WithPredicates(ShootPredicate())).
+		Watches(
+			&authenticationv1alpha1.OpenIDConnect{},
+			handler.EnqueueRequestsFromMapFunc(MapOIDCToShoot),
+			builder.WithPredicates(ManagedByOIDCPredicate()),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 50,
 			RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
@@ -54,11 +64,11 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // ShootPredicate returns a predicate to filter Shoot events
-func (r *Reconciler) ShootPredicate() predicate.Predicate {
+func ShootPredicate() predicate.Predicate {
 	return predicate.Funcs{
-		CreateFunc:  func(e event.CreateEvent) bool { return r.IsRelevantShoot(e.Object) },
-		UpdateFunc:  func(e event.UpdateEvent) bool { return r.IsRelevantShootUpdate(e.ObjectOld, e.ObjectNew) },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return r.IsRelevantShoot(e.Object) },
+		CreateFunc:  func(e event.CreateEvent) bool { return IsRelevantShoot(e.Object) },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return IsRelevantShootUpdate(e.ObjectOld, e.ObjectNew) },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return IsRelevantShoot(e.Object) },
 		GenericFunc: func(_ event.GenericEvent) bool { return false },
 	}
 }
@@ -66,7 +76,7 @@ func (r *Reconciler) ShootPredicate() predicate.Predicate {
 // IsRelevantShoot is true for a shoot with:
 // - "authentication.gardener.cloud/trusted" annotation set to "true"
 // - "authentication.gardener.cloud/issuer" annotation set to "managed"
-func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
+func IsRelevantShoot(obj client.Object) bool {
 	shoot, ok := obj.(*gardencorev1beta1.Shoot)
 	if !ok {
 		return false
@@ -85,7 +95,7 @@ func (r *Reconciler) IsRelevantShoot(obj client.Object) bool {
 // - a Shoot becoming relevant or irrelevant using [IsRelevantShoot]
 // - the service-account-issuer changed
 // - a shoot being marked for deletion
-func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
+func IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
 	oldShoot, ok := oldObj.(*gardencorev1beta1.Shoot)
 	if !ok {
 		return false
@@ -95,13 +105,13 @@ func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
 		return false
 	}
 
-	oldIsRelevant := r.IsRelevantShoot(oldShoot)
-	newIsRelevant := r.IsRelevantShoot(newShoot)
+	oldIsRelevant := IsRelevantShoot(oldShoot)
+	newIsRelevant := IsRelevantShoot(newShoot)
 
 	if oldIsRelevant != newIsRelevant {
 		return true
 	}
-	if (oldIsRelevant || newIsRelevant) && r.HasServiceAccountIssuerChanged(oldShoot, newShoot) {
+	if (oldIsRelevant || newIsRelevant) && HasServiceAccountIssuerChanged(oldShoot, newShoot) {
 		return true
 	}
 	if (oldIsRelevant || newIsRelevant) && oldShoot.GetDeletionTimestamp() == nil && newShoot.GetDeletionTimestamp() != nil {
@@ -111,7 +121,7 @@ func (r *Reconciler) IsRelevantShootUpdate(oldObj, newObj client.Object) bool {
 }
 
 // HasServiceAccountIssuerChanged checks if the shoot's service-account-issuer has been changed
-func (r *Reconciler) HasServiceAccountIssuerChanged(oldShoot, newShoot *gardencorev1beta1.Shoot) bool {
+func HasServiceAccountIssuerChanged(oldShoot, newShoot *gardencorev1beta1.Shoot) bool {
 	var (
 		oldStatuses = oldShoot.Status.AdvertisedAddresses
 		newStatuses = newShoot.Status.AdvertisedAddresses
@@ -135,4 +145,20 @@ func getAdvertisedAddressServiceAccountIssuer(addrs []gardencorev1beta1.ShootAdv
 	return slices.IndexFunc(addrs, func(a gardencorev1beta1.ShootAdvertisedAddress) bool {
 		return a.Name == v1beta1constants.AdvertisedAddressServiceAccountIssuer
 	})
+}
+
+func ManagedByOIDCPredicate() predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		return obj.GetLabels()[constants.LabelManagedByKey] == constants.LabelManagedByValue
+	})
+}
+
+func MapOIDCToShoot(_ context.Context, obj client.Object) []reconcile.Request {
+	parts := strings.SplitN(obj.GetName(), constants.Separator, 3)
+	if len(parts) != 3 {
+		return nil
+	}
+	return []reconcile.Request{
+		{NamespacedName: types.NamespacedName{Namespace: parts[0], Name: parts[1]}},
+	}
 }
