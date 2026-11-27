@@ -7,6 +7,7 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -84,6 +85,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("shoot does not have 'service-account-issuer' in its status.advertisedAddresses")
 	}
 
+	// Ensure the advertised issuer URL is structurally bound to this shoot before trusting it.
+	if err := validateIssuerBoundToShoot(shoot, issuerURL); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// Validate that the issuer is not already registered by another OIDC resource.
 	if err := r.validateNoDuplicateIssuer(ctx, shoot, issuerURL); err != nil {
 		return ctrl.Result{}, err
@@ -159,6 +165,23 @@ func (r *Reconciler) deleteOIDCResource(ctx context.Context, log logr.Logger, sh
 		return fmt.Errorf("failed to delete OIDC: %w", err)
 	}
 	log.Info("Successfully deleted OIDC resource", "oidc", oidcObjectKey)
+	return nil
+}
+
+func validateIssuerBoundToShoot(shoot *gardencorev1beta1.Shoot, issuerURL string) error {
+	u, err := url.Parse(issuerURL)
+	if err != nil {
+		return fmt.Errorf("service-account-issuer URL %q is not a valid URL: %w", issuerURL, err)
+	}
+
+	segments := strings.Split(strings.Trim(u.Path, "/"), "/")
+	uid := string(shoot.UID)
+	if len(segments) != 5 ||
+		segments[0] != "projects" || segments[1] == "" ||
+		segments[2] != "shoots" || segments[3] != uid ||
+		segments[4] != "issuer" {
+		return fmt.Errorf("issuer URL %q is not bound to shoot %s/%s (uid %q); expected path /projects/<project>/shoots/%s/issuer", issuerURL, shoot.Namespace, shoot.Name, uid, uid)
+	}
 	return nil
 }
 

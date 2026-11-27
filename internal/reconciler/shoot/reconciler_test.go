@@ -45,6 +45,7 @@ var _ = Describe("#ShootReconciler", func() {
 
 		shoot          *gardencorev1beta1.Shoot
 		shootUID       = types.UID("39f6d713-99c6-424a-827b-6bc532329b77")
+		issuerURL      = fmt.Sprintf("https://discovery.example.com/projects/abc/shoots/%s/issuer", shootUID)
 		shootObjectKey client.ObjectKey
 
 		oidc          *authenticationv1alpha1.OpenIDConnect
@@ -84,7 +85,7 @@ var _ = Describe("#ShootReconciler", func() {
 				AdvertisedAddresses: []gardencorev1beta1.ShootAdvertisedAddress{
 					{
 						Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
-						URL:  "https://shoot/issuer",
+						URL:  issuerURL,
 					},
 				},
 			},
@@ -118,7 +119,7 @@ var _ = Describe("#ShootReconciler", func() {
 						ResourceVersion: "1",
 					},
 					Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-						IssuerURL:                 "https://shoot/issuer",
+						IssuerURL:                 issuerURL,
 						Audiences:                 []string{"garden"},
 						UsernameClaim:             ptr.To("sub"),
 						UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
@@ -149,7 +150,7 @@ var _ = Describe("#ShootReconciler", func() {
 						ResourceVersion: "1",
 					},
 					Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-						IssuerURL:                 "https://shoot/issuer",
+						IssuerURL:                 issuerURL,
 						Audiences:                 []string{"garden"},
 						UsernameClaim:             ptr.To("sub"),
 						UsernamePrefix:            ptr.To(fmt.Sprintf("ns:%s:shoot:%s:%s:", shoot.Namespace, shoot.Name, string(shoot.UID))),
@@ -291,6 +292,82 @@ var _ = Describe("#ShootReconciler", func() {
 			Expect(oidcList.Items).To(BeEmpty())
 		})
 
+		It("should result in error when the advertised issuer URL is bound to a different project", func() {
+			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
+				{
+					Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
+					URL:  "https://discovery.example.com/projects/other-project/shoots/xyz/issuer",
+				},
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not bound to shoot"))
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error when the advertised issuer URL is bound to a different shoot's UID", func() {
+			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
+				{
+					Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
+					URL:  "https://discovery.example.com/projects/abc/shoots/xyz/issuer",
+				},
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not bound to shoot"))
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error when the advertised issuer URL does not have the expected managed issuer path", func() {
+			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
+				{
+					Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
+					URL:  "https://discovery.example.com/some/other/path",
+				},
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not bound to shoot"))
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
+		It("should result in error when the advertised issuer URL is not valid", func() {
+			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
+				{
+					Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
+					URL:  "https:/discovery.example.com/some/other/path",
+				},
+			}
+			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
+
+			res, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: shootObjectKey})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not bound to shoot"))
+			Expect(res).To(Equal(ctrl.Result{}))
+
+			var oidcList authenticationv1alpha1.OpenIDConnectList
+			Expect(fakeClient.List(ctx, &oidcList)).To(Succeed())
+			Expect(oidcList.Items).To(BeEmpty())
+		})
+
 		It("should result in error when another managed OIDC resource already uses the same issuer", func() {
 			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())
 
@@ -302,7 +379,7 @@ var _ = Describe("#ShootReconciler", func() {
 					},
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL: "https://shoot/issuer",
+					IssuerURL: issuerURL,
 				},
 			}
 			Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
@@ -321,7 +398,7 @@ var _ = Describe("#ShootReconciler", func() {
 					Name: "manually-created-oidc",
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL: "https://shoot/issuer",
+					IssuerURL: issuerURL,
 				},
 			}
 			Expect(fakeClient.Create(ctx, conflictingOIDC)).To(Succeed())
@@ -343,7 +420,7 @@ var _ = Describe("#ShootReconciler", func() {
 					},
 				},
 				Spec: authenticationv1alpha1.OIDCAuthenticationSpec{
-					IssuerURL: "https://shoot/issuer",
+					IssuerURL: issuerURL,
 				},
 			}
 			Expect(fakeClient.Create(ctx, existingOIDC)).To(Succeed())
