@@ -147,12 +147,14 @@ func getAdvertisedAddressServiceAccountIssuer(addrs []gardencorev1beta1.ShootAdv
 	})
 }
 
+// ManagedByOIDCPredicate checks labels of OIDC resources to filter only those managed by the operator.
 func ManagedByOIDCPredicate() predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return obj.GetLabels()[constants.LabelManagedByKey] == constants.LabelManagedByValue
 	})
 }
 
+// MapOIDCToShoot maps an OIDC resource to the corresponding Shoot based on the naming convention.
 func MapOIDCToShoot(_ context.Context, obj client.Object) []reconcile.Request {
 	parts := strings.SplitN(obj.GetName(), constants.Separator, 3)
 	if len(parts) != 3 {
