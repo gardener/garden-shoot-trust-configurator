@@ -45,7 +45,7 @@ var _ = Describe("#ShootReconciler", func() {
 
 		shoot          *gardencorev1beta1.Shoot
 		shootUID       = types.UID("39f6d713-99c6-424a-827b-6bc532329b77")
-		issuerURL      = fmt.Sprintf("https://discovery.example.com/projects/abc/shoots/%s/issuer", shootUID)
+		issuerURL      = fmt.Sprintf("https://discovery.example.com/projects/garden-abc/shoots/%s/issuer", shootUID)
 		shootObjectKey client.ObjectKey
 
 		oidc          *authenticationv1alpha1.OpenIDConnect
@@ -315,7 +315,7 @@ var _ = Describe("#ShootReconciler", func() {
 			shoot.Status.AdvertisedAddresses = []gardencorev1beta1.ShootAdvertisedAddress{
 				{
 					Name: v1beta1constants.AdvertisedAddressServiceAccountIssuer,
-					URL:  "https://discovery.example.com/projects/abc/shoots/xyz/issuer",
+					URL:  "https://discovery.example.com/projects/garden-abc/shoots/xyz/issuer",
 				},
 			}
 			Expect(fakeClient.Create(ctx, shoot)).To(Succeed())

@@ -177,7 +177,7 @@ func validateIssuerBoundToShoot(shoot *gardencorev1beta1.Shoot, issuerURL string
 	segments := strings.Split(strings.Trim(u.Path, "/"), "/")
 	uid := string(shoot.UID)
 	if len(segments) != 5 ||
-		segments[0] != "projects" || segments[1] == "" ||
+		segments[0] != "projects" || segments[1] != shoot.Namespace ||
 		segments[2] != "shoots" || segments[3] != uid ||
 		segments[4] != "issuer" {
 		return fmt.Errorf("issuer URL %q is not bound to shoot %s/%s (uid %q); expected path /projects/<project>/shoots/%s/issuer", issuerURL, shoot.Namespace, shoot.Name, uid, uid)
