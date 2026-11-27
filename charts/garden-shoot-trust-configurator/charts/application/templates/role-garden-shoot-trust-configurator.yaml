@@ -11,14 +11,6 @@ metadata:
 {{ include "labels" . | indent 4 }}
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
